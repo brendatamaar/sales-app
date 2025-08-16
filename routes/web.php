@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DealController;
+use App\Http\Controllers\DokumenController;
+use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\PropertyController;
 use Illuminate\Support\Facades\Route;
-
+use Illuminate\Support\Facades\Auth;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,6 +18,17 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/home', function () {
+        return view('dashboard');
+    })->name('home');
+
+    Route::resource('deals', DealController::class);
+    Route::resource('produk', ProdukController::class);
+    Route::resource('dokumen', DokumenController::class);
+    Route::resource('properties', PropertyController::class);
 });
