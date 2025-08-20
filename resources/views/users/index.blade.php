@@ -1,87 +1,99 @@
 @extends('layout.master')
 
 @section('content')
+<div class="card">
+    <div class="card-body">
+        <h1 class="card-title">Manage Users</h1>
 
-    <div class="card">
-        <div class="card-body">
-            <h1 class="card-title">Manage Users</h1>
+        {{-- flash messages --}}
+        @if(session('success'))
+            <div class="alert alert-success">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger">{{ session('error') }}</div>
+        @endif
+
+        {{-- actions --}}
+        <div class="d-flex justify-content-between align-items-center mb-3">
             @can('create-user')
-                <a href="{{ route('users.create') }}" class="btn btn-success btn-sm my-2"><i class="bi bi-plus-circle"></i> Add New
-                    User</a>
+                <a href="{{ route('users.create') }}" class="btn btn-success btn-sm">
+                    <i class="fa fa-plus-circle"></i> Add New User
+                </a>
             @endcan
-            <table class="table table-striped table-responsive">
+
+            <form method="GET" action="{{ route('users.index') }}" class="form-inline">
+                <input type="text" class="form-control form-control-sm mr-2" name="q" value="{{ $q ?? '' }}" placeholder="Search username/email/region">
+                <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
                 <thead>
                     <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Name</th>
-                        <th scope="col">NIK</th>
-                        <th scope="col">Email</th>
-                        <th scope="col">Region</th>
-                        <th scope="col">Site Name</th>
-                        <th scope="col">Roles</th>
-                        <th scope="col">Action</th>
+                        <th>#</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Region</th>
+                        <th>Store</th>
+                        <th>Roles</th>
+                        <th style="width:220px">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($users as $user)
                         <tr>
-                            <td scope="row" data-content="#">{{ $loop->iteration }}</td>
-                            <td data-content="Name">{{ $user->name }}</td>
-                            <td data-content="NIK">{{ $user->nik }}</td>
-                            <td data-content="Email">{{ $user->email }}</td>
-                            <td data-content="Region">{{ $user->regions->reg_name }}</td>
-                            <td data-content="Site Name">{{ $user->stores->site_name }}</td>
-                            <td data-content="Roles">
+                            <td>{{ ($users->currentPage()-1)*$users->perPage() + $loop->iteration }}</td>
+                            <td>{{ $user->username ?? '-' }}</td>
+                            <td>{{ $user->email }}</td>
+                            <td>{{ $user->region ?? '-' }}</td>
+                            <td>{{ optional($user->store)->store_name ?? '-' }}</td>
+                            <td>
                                 @forelse ($user->getRoleNames() as $role)
-                                    <span class="badge bg-primary text-white">{{ $role }}</span>
+                                    <span class="badge badge-primary">{{ $role }}</span>
                                 @empty
+                                    <span class="text-muted">-</span>
                                 @endforelse
                             </td>
-                            <td data-content="Action">
-                                <form action="{{ route('users.destroy', $user->id) }}" method="post">
+                            <td>
+                                <form action="{{ route('users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Delete this user?');">
                                     @csrf
                                     @method('DELETE')
 
-                                    <a href="{{ route('users.show', $user->id) }}" class="btn btn-warning btn-xs"><i
-                                            class="bi bi-eye"></i> Show</a>
+                                    <a href="{{ route('users.show', $user->id) }}" class="btn btn-warning btn-xs">
+                                        <i class="fa fa-eye"></i> Show
+                                    </a>
 
-                                    @if (in_array('SWM', $user->getRoleNames()->toArray() ?? []))
-                                        @if (Auth::user()->hasRole('SWM'))
-                                            <a href="{{ route('users.edit', $user->id) }}"
-                                                class="btn btn-primary btn-xs"><i class="bi bi-pencil-square"></i>
-                                                Edit</a>
+                                    @can('edit-user')
+                                        <a href="{{ route('users.edit', $user->id) }}" class="btn btn-primary btn-xs">
+                                            <i class="fa fa-pencil-alt"></i> Edit
+                                        </a>
+                                    @endcan
+
+                                    @can('delete-user')
+                                        @if (auth()->id() !== $user->id)
+                                            <button type="submit" class="btn btn-danger btn-xs">
+                                                <i class="fa fa-trash"></i> Delete
+                                            </button>
                                         @endif
-                                    @else
-                                        @can('edit-user')
-                                            <a href="{{ route('users.edit', $user->id) }}" class="btn btn-primary btn-xs"><i
-                                                    class="bi bi-pencil-square"></i>
-                                                Edit</a>
-                                        @endcan
-
-                                        @can('delete-user')
-                                            @if (Auth::user()->id != $user->id)
-                                                <button type="submit" class="btn btn-danger btn-xs"
-                                                    onclick="return confirm('Do you want to delete this user?');"><i
-                                                        class="bi bi-trash"></i> Delete</button>
-                                            @endif
-                                        @endcan
-                                    @endif
-
+                                    @endcan
                                 </form>
                             </td>
                         </tr>
                     @empty
-                        <td colspan="5">
-                            <span class="text-danger">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
                                 <strong>No User Found!</strong>
-                            </span>
-                        </td>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
-            {{ $users->links() }}
+        </div>
 
+        <div class="mt-3">
+            {{ $users->links() }}
         </div>
     </div>
-
+</div>
 @endsection

@@ -1,10 +1,15 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BobotController;
 use App\Http\Controllers\DealController;
 use App\Http\Controllers\DokumenController;
+use App\Http\Controllers\PointController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\StoreController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 /*
@@ -27,8 +32,21 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard');
     })->name('home');
 
+
+    Route::prefix('stores')->group(function () {
+        Route::get('/search', [StoreController::class, 'search'])->name('stores.search');
+    });
+    Route::get('/items/search', [ProductController::class, 'search'])
+    ->name('items.search');
+
+
     Route::resource('deals', DealController::class);
-    Route::resource('produk', ProdukController::class);
+    Route::resource('products', ProductController::class);
     Route::resource('dokumen', DokumenController::class);
     Route::resource('properties', PropertyController::class);
+    Route::resource('stores', StoreController::class);
+    Route::resource('users', UserController::class);
+    Route::resource('bobot', BobotController::class);
+    Route::resource('point', PointController::class);
+
 });

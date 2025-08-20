@@ -210,7 +210,7 @@ if ($('canvas').length) {
     $(".form-check label,.form-radio label").append('<i class="input-helper"></i>');
   });
 
-  $('[data-toggle="tooltip"]').tooltip();
+  // $('[data-toggle="tooltip"]').tooltip();
 
   $(".sidebar .sidebar-inner > .nav > .nav-item").not(".brand-logo").attr('toggle-status', 'closed');
   $(".sidebar .sidebar-inner > .nav > .nav-item").on('click', function () {

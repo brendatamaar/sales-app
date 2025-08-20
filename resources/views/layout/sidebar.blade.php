@@ -16,7 +16,7 @@
                             <p class="profile-name">{{ Auth::user()->username ?? Auth::user()->name }}</p>
                             <div class="dropdown" data-display="static">
                                 <a href="#" class="nav-link d-flex user-switch-dropdown-toggler"
-                                   id="UsersettingsDropdown" data-toggle="dropdown" aria-expanded="false">
+                                    id="UsersettingsDropdown" data-toggle="dropdown" aria-expanded="false">
                                     <small class="designation text-muted">
                                         {{ Auth::user()->getRoleNames()->implode(', ') }}
                                     </small>
@@ -26,7 +26,7 @@
                                     <a class="dropdown-item mt-2">Manage Accounts</a>
                                     <a class="dropdown-item">Change Password</a>
                                     <a class="dropdown-item" href="{{ route('logout') }}"
-                                       onclick="event.preventDefault();
+                                        onclick="event.preventDefault();
                                        document.getElementById('logout-form2').submit();">
                                         Sign Out
                                     </a>
@@ -56,8 +56,8 @@
             </a>
         </li>
 
-        <li class="nav-item {{ Route::is('produk.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('produk.index') }}">
+        <li class="nav-item {{ Route::is('products.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('products.index') }}">
                 <i class="menu-icon mdi mdi-package-variant"></i>
                 <span class="menu-title">Produk</span>
             </a>
@@ -70,10 +70,16 @@
             </a>
         </li>
 
-        <li class="nav-item {{ Route::is('properties.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('properties.index') }}">
+        <li class="nav-item {{ Route::is('stores.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('stores.index') }}">
                 <i class="menu-icon mdi mdi-home-city"></i>
-                <span class="menu-title">Properties</span>
+                <span class="menu-title">Stores</span>
+            </a>
+        </li>
+        <li class="nav-item {{ Route::is('users.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('users.index') }}">
+                <i class="menu-icon mdi mdi-user"></i>
+                <span class="menu-title">Users</span>
             </a>
         </li>
     </ul>
