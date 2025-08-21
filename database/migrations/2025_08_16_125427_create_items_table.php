@@ -11,6 +11,7 @@ class CreateItemsTable extends Migration
         Schema::create('items', function (Blueprint $table) {
             $table->bigIncrements('item_no');
             $table->string('item_name');
+            $table->string('category');
             $table->string('uom', 20)->nullable();
             $table->decimal('price', 15, 2)->default(0);
             $table->decimal('disc', 5, 2)->nullable(); // % discount
