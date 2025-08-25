@@ -8,6 +8,7 @@ use App\Http\Controllers\PointController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\SalperController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -37,9 +38,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/search', [StoreController::class, 'search'])->name('stores.search');
     });
     Route::get('/items/search', [ProductController::class, 'search'])
-    ->name('items.search');
+        ->name('items.search');
 
+    Route::get('/salpers/search', [SalperController::class, 'search'])->name('salpers.search');
 
+    Route::patch('/deals/{deal}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
+    Route::get('/deals/{id}', [DealController::class, 'getDeal'])->name('deals.api.show');
+
+    Route::resource('salpers', SalperController::class);
     Route::resource('deals', DealController::class);
     Route::resource('products', ProductController::class);
     Route::resource('dokumen', DokumenController::class);

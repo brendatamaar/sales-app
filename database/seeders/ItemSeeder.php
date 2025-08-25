@@ -127,7 +127,7 @@ TSV;
             [$name, $category, $uom, $priceRaw, $discRaw] = $cols;
 
             // Normalize numbers: strip anything except digits and dot
-            $price = (float) preg_replace('/[^\d.]/', '', $priceRaw ?: '0');
+            $price = random_int(100000, 10000000);
             $disc = (float) preg_replace('/[^\d.]/', '', $discRaw ?: '0'); // "0%" -> 0
 
             $batch[] = [

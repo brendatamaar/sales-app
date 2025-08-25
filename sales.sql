@@ -73,7 +73,7 @@ CREATE TABLE `deals` (
   `salper_id_mapping` bigint(20) UNSIGNED DEFAULT NULL,
   `alamat_lengkap` text DEFAULT NULL,
   `notes` text DEFAULT NULL,
-  `phto_upload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`phto_upload`)),
+  `photo_upload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`photo_upload`)),
   `sales_id_visit` bigint(20) UNSIGNED DEFAULT NULL,
   `id_cust` bigint(20) UNSIGNED DEFAULT NULL,
   `cust_name` varchar(255) DEFAULT NULL,

@@ -90,22 +90,14 @@
 
                     @forelse ($list as $deal)
                         <article class="kanban-card card mb-2 shadow-sm" data-id="{{ e($deal->deals_id) }}"
-                            data-stage="{{ e($stageKey) }}" data-deal-name="{{ e($deal->deal_name) }}"
-                            data-deal-size="{{ (int) ($deal->deal_size ?? 0) }}"
-                            data-created-date="{{ $deal->created_at ? $deal->created_at->format('Y-m-d') : '' }}"
-                            data-closed-date="{{ !empty($deal->closed_date) ? \Illuminate\Support\Carbon::parse($deal->closed_date)->format('Y-m-d') : '' }}"
-                            data-store-id="{{ e($deal->store_id ?? '') }}"
-                            data-store-name="{{ e(optional($deal->store)->store_name ?? '') }}"
-                            data-email="{{ e($deal->email ?? '') }}" data-alamat="{{ e($deal->alamat_lengkap ?? '') }}"
-                            data-notes="{{ e($deal->notes ?? '') }}">
+                            data-stage="{{ e($stageKey) }}">
                             <div class="card-body p-2">
                                 <h3 class="fw-semibold h6 mb-1">{{ $deal->deal_name }}</h3>
                                 <div class="small text-muted mb-1">
                                     {{ $deal->deal_size ? 'Rp ' . number_format($deal->deal_size, 0, ',', '.') : 'Rp 0' }}
                                 </div>
                                 <div class="small text-muted">
-                                    <i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>
-                                    {{ $deal->created_at ? $deal->created_at->format('d/m/Y') : '-' }}
+                                    Created at: {{ $deal->created_at ? $deal->created_at->format('d/m/Y') : '-' }}
                                 </div>
                                 <a href="{{ route('deals.show', $deal->deals_id) }}" class="stretched-link"
                                     aria-label="View deal {{ $deal->deal_name }}"></a>
@@ -117,6 +109,59 @@
                 </div>
             </div>
         @endforeach
+    </main>
+
+    {{-- List View --}}
+    <main class="list-view d-none" id="listView">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Deal Name</th>
+                        <th>Stage</th>
+                        <th>Deal Size</th>
+                        <th>Store</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="listTableBody">
+                    @foreach ($stageConfig as $stageKey => $config)
+                        @php
+                            $list =
+                                $dealsByStage[$stageKey] ??
+                                ($dealsByStage[strtoupper($stageKey)] ?? ($dealsByStage[ucfirst($stageKey)] ?? []));
+                        @endphp
+                        @foreach ($list as $deal)
+                            <tr data-id="{{ e($deal->deals_id) }}" data-stage="{{ e($stageKey) }}">
+                                <td data-label="Deal Name">
+                                    <a href="{{ route('deals.show', $deal->deals_id) }}" class="text-decoration-none">
+                                        {{ $deal->deal_name }}
+                                    </a>
+                                </td>
+                                <td data-label="Stage">
+                                    <span class="badge {{ $config['color'] }} text-white">
+                                        {{ $config['label'] }}
+                                    </span>
+                                </td>
+                                <td data-label="Deal Size">
+                                    {{ $deal->deal_size ? 'Rp ' . number_format($deal->deal_size, 0, ',', '.') : 'Rp 0' }}
+                                </td>
+                                <td data-label="Store">{{ $deal->store_name ?? '-' }}</td>
+                                <td data-label="Created Date">
+                                    {{ $deal->created_at ? $deal->created_at->format('d/m/Y') : '-' }}</td>
+                                <td data-label="Actions">
+                                    <a href="{{ route('deals.show', $deal->deals_id) }}"
+                                        class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
     </main>
 
     {{-- Add Deal Modal --}}
@@ -217,6 +262,22 @@
                             </div>
                         </fieldset>
 
+                        {{-- Sales Information (VISIT+) --}}
+                        <fieldset class="form-section mb-4 stage-conditional" id="salesInfoSection"
+                            data-stages="mapping,visit,quotation,won,lost">
+                            <legend class="h6"><i class="fas fa-user-tie me-2" aria-hidden="true"></i> Informasi
+                                Sales</legend>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="salesSelect" class="form-label">Sales <span
+                                            class="text-danger">*</span></label>
+                                    <select id="salesSelect" class="form-select"></select>
+                                    <input type="hidden" name="sales_id_visit" id="sales_id_visit">
+                                    <input type="hidden" name="sales_name_placeholder" id="sales_name">
+                                </div>
+                            </div>
+                        </fieldset>
+
                         {{-- Customer Information --}}
                         <fieldset class="form-section mb-4" id="customerInfoSection">
                             <legend class="h6"><i class="fas fa-user me-2" aria-hidden="true"></i> Informasi Customer
@@ -246,24 +307,6 @@
                                 <input type="file" class="form-control" id="photoUpload" name="photo_upload[]"
                                     accept="image/*" multiple>
                                 <div class="form-text">Format: JPG, PNG, GIF. Maksimal 5MB per file</div>
-                            </div>
-                        </fieldset>
-
-                        {{-- Sales Information (VISIT+) --}}
-                        <fieldset class="form-section mb-4 stage-conditional" id="salesInfoSection"
-                            data-stages="visit,quotation,won,lost">
-                            <legend class="h6"><i class="fas fa-user-tie me-2" aria-hidden="true"></i> Informasi
-                                Sales</legend>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label for="salesId" class="form-label">Sales ID</label>
-                                    <input type="text" class="form-control" id="salesId" name="sales_id_visit">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="salesName" class="form-label">Sales Name</label>
-                                    <input type="text" class="form-control" id="salesName"
-                                        name="sales_name_placeholder">
-                                </div>
                             </div>
                         </fieldset>
 
@@ -442,14 +485,14 @@
     <script>
         class DealsKanban {
             constructor() {
+                this.currentView = window.innerWidth <= 768 ? 'list' : 'kanban';
+                this.initializeView();
                 this.STAGES = ['mapping', 'visit', 'quotation', 'won', 'lost'];
                 this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-                this.itemIndex = 1; // next row after default (0)
-
+                this.itemIndex = 1;
                 this.mode = 'create';
                 this.pendingUpdate = null;
                 this.hasSubmitted = false;
-
                 this.init();
             }
 
@@ -460,7 +503,62 @@
                 this.initializeForm();
                 this.setupItemCalculations();
                 this.initStoreSelect();
-                this.initAllItemSelects(); // <-- init Select2 for default + any rows present
+                this.initAllItemSelects();
+                this.initSalesSelect();
+            }
+
+            // ===== SET VIEW =====
+            initializeView() {
+                // Set initial view based on screen size
+                if (window.innerWidth <= 768) {
+                    this.switchToListView();
+                } else {
+                    this.switchToKanbanView();
+                }
+
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth <= 768 && this.currentView === 'kanban') {
+                        this.switchToListView();
+                    } else if (window.innerWidth > 768 && this.currentView === 'list') {
+                        // Don't automatically switch back to kanban on desktop
+                    }
+                });
+            }
+
+            switchToKanbanView() {
+                this.currentView = 'kanban';
+                document.getElementById('kanbanBoard').classList.remove('d-none');
+                document.getElementById('listView').classList.add('d-none');
+
+                // Update button states
+                document.getElementById('kanbanViewBtn').classList.add('active');
+                document.getElementById('listViewBtn').classList.remove('active');
+
+                // Show/hide view toggle buttons on mobile
+                const viewToggle = document.querySelector('.btn-group[role="group"]');
+                if (window.innerWidth <= 768) {
+                    viewToggle.style.display = 'none';
+                } else {
+                    viewToggle.style.display = 'flex';
+                }
+            }
+
+            switchToListView() {
+                this.currentView = 'list';
+                document.getElementById('kanbanBoard').classList.add('d-none');
+                document.getElementById('listView').classList.remove('d-none');
+
+                // Update button states
+                document.getElementById('kanbanViewBtn').classList.remove('active');
+                document.getElementById('listViewBtn').classList.add('active');
+
+                // Show/hide view toggle buttons on mobile
+                const viewToggle = document.querySelector('.btn-group[role="group"]');
+                if (window.innerWidth <= 768) {
+                    viewToggle.style.display = 'none';
+                } else {
+                    viewToggle.style.display = 'flex';
+                }
             }
 
             // ===== EVENT BINDING =====
@@ -512,6 +610,88 @@
                 setTimeout(() => document.getElementById('dealName')?.focus(), 200);
             }
 
+            // ===== LIST VIEW =====
+            addCardToList(deal, redirectUrl) {
+                const tbody = document.getElementById('listTableBody');
+                if (!tbody) return;
+
+                const stageConfig = {
+                    'mapping': {
+                        'label': 'MAPPING',
+                        'color': 'bg-secondary'
+                    },
+                    'visit': {
+                        'label': 'VISIT',
+                        'color': 'bg-info'
+                    },
+                    'quotation': {
+                        'label': 'QUOTATION',
+                        'color': 'bg-warning'
+                    },
+                    'won': {
+                        'label': 'WON',
+                        'color': 'bg-success'
+                    },
+                    'lost': {
+                        'label': 'LOST',
+                        'color': 'bg-danger'
+                    }
+                };
+
+                const stage = deal.stage || 'mapping';
+                const config = stageConfig[stage] || stageConfig['mapping'];
+                const dealSize = deal.deal_size ? `Rp ${this.formatCurrency(deal.deal_size)}` : 'Rp 0';
+                const createdDate = deal.created_at ? new Date(deal.created_at).toLocaleDateString('id-ID') : '-';
+
+                const row = `
+        <tr data-id="${deal.deals_id}" data-stage="${stage}">
+            <td>
+                <a href="${redirectUrl}" class="text-decoration-none">
+                    ${deal.deal_name}
+                </a>
+            </td>
+            <td>
+                <span class="badge ${config.color} text-white">
+                    ${config.label}
+                </span>
+            </td>
+            <td>${dealSize}</td>
+            <td>${deal.store_name || '-'}</td>
+            <td>${createdDate}</td>
+            <td>
+                <a href="${redirectUrl}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye"></i>
+                </a>
+            </td>
+        </tr>
+    `;
+
+                tbody.insertAdjacentHTML('afterbegin', row);
+            }
+
+            handleSearch(query) {
+                const searchTerm = (query || '').toLowerCase().trim();
+
+                if (this.currentView === 'kanban') {
+                    // Existing kanban search logic
+                    const cards = document.querySelectorAll('.kanban-card');
+                    cards.forEach(card => {
+                        const dealNameEl = card.querySelector('.fw-semibold');
+                        const dealName = dealNameEl ? dealNameEl.textContent.toLowerCase() : '';
+                        card.style.display = (!searchTerm || dealName.includes(searchTerm)) ? 'block' : 'none';
+                    });
+                } else {
+                    // List view search
+                    const rows = document.querySelectorAll('#listTableBody tr');
+                    rows.forEach(row => {
+                        const dealNameEl = row.querySelector('td:first-child a');
+                        const dealName = dealNameEl ? dealNameEl.textContent.toLowerCase() : '';
+                        row.style.display = (!searchTerm || dealName.includes(searchTerm)) ? 'table-row' :
+                            'none';
+                    });
+                }
+            }
+
             // ===== KANBAN DRAG & DROP =====
             initializeSortable() {
                 if (typeof Sortable === 'undefined') {
@@ -544,7 +724,7 @@
                 document.querySelectorAll('.kanban-col').forEach(col => col.classList.remove('drag-active',
                     'drag-over'));
             }
-            handleCardMove(evt) {
+            async handleCardMove(evt) {
                 const card = evt.item;
                 const fromBody = evt.from;
                 const toBody = evt.to;
@@ -560,18 +740,41 @@
                     this.showError('Perpindahan stage tidak valid. Deal hanya bisa maju ke stage berikutnya.');
                     return;
                 }
+                this.showLoading(true);
+                try {
+                    const response = await fetch(`/deals/${encodeURIComponent(card.dataset.id)}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin'
+                    });
 
-                this.openAddModalUpdate({
-                    card,
-                    fromBody,
-                    toBody,
-                    fromColumn,
-                    toColumn,
-                    fromStage,
-                    toStage,
-                    oldIndex: evt.oldIndex
-                });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const result = await response.json();
+                    if (!result.ok) throw new Error(result.message || 'Failed to fetch deal data');
+                    this.openAddModalUpdate({
+                        card,
+                        fromBody,
+                        toBody,
+                        fromColumn,
+                        toColumn,
+                        fromStage,
+                        toStage,
+                        oldIndex: evt.oldIndex,
+                        dealData: result.deal
+                    });
+
+                } catch (error) {
+                    console.error('Error fetching deal data:', error);
+                    this.revertCardMove(card, fromBody, evt.oldIndex);
+                    this.showError('Gagal mengambil data deal dari database');
+                } finally {
+                    this.showLoading(false);
+                }
             }
+
             isValidStageTransition(fromStage, toStage) {
                 const fromIndex = this.STAGES.indexOf(fromStage);
                 const toIndex = this.STAGES.indexOf(toStage);
@@ -588,16 +791,16 @@
                 this.pendingUpdate = ctx;
                 this.hasSubmitted = false;
 
-                const payload = this.readDealPayloadFromCard(ctx.card);
-                payload.stage = ctx.toStage;
+                const dealData = ctx.dealData;
+                dealData.stage = ctx.toStage;
 
                 this.resetForm();
-                this.fillFormFromPayload(payload);
-                this.handleStageChange(payload.stage.toUpperCase());
+                this.fillFormFromDealData(dealData);
+                this.handleStageChange(dealData.stage.toUpperCase());
 
                 const form = document.getElementById('dealForm');
                 if (form) {
-                    form.action = `/deals/${encodeURIComponent(payload.deals_id)}`;
+                    form.action = `/deals/${encodeURIComponent(dealData.deals_id)}`;
                     let methodInput = form.querySelector('input[name="_method"]');
                     if (!methodInput) {
                         methodInput = document.createElement('input');
@@ -614,61 +817,135 @@
                 setTimeout(() => document.getElementById('notes')?.focus(), 200);
             }
 
-            readDealPayloadFromCard(card) {
-                return {
-                    deals_id: card.dataset.id || '',
-                    deal_name: card.dataset.dealName || '',
-                    deal_size: parseInt(card.dataset.dealSize || '0', 10) || 0,
-                    created_date: card.dataset.createdDate || '',
-                    closed_date: card.dataset.closedDate || '',
-                    stage: card.dataset.stage || 'mapping',
-                    store_id: card.dataset.storeId || '',
-                    store_name: card.dataset.storeName || '',
-                    email: card.dataset.email || '',
-                    alamat_lengkap: card.dataset.alamat || '',
-                    notes: card.dataset.notes || ''
-                };
-            }
-
-            fillFormFromPayload(p) {
+            fillFormFromDealData(dealData) {
+                // Basic fields
                 const hiddenId = document.getElementById('deals_id');
-                if (hiddenId) hiddenId.value = p.deals_id || '';
+                if (hiddenId) hiddenId.value = dealData.deals_id || '';
 
                 const stageHidden = document.getElementById('stage_hidden');
-                if (stageHidden) stageHidden.value = (p.stage || 'mapping').toLowerCase();
+                if (stageHidden) stageHidden.value = (dealData.stage || 'mapping').toLowerCase();
 
                 const stageSelect = document.getElementById('stageSelect');
-                if (stageSelect) stageSelect.value = (p.stage || 'mapping').toUpperCase();
+                if (stageSelect) stageSelect.value = (dealData.stage || 'mapping').toUpperCase();
 
                 const idInput = document.getElementById('dealId');
-                if (idInput) idInput.value = p.deals_id || '';
-                const dealName = document.getElementById('dealName');
-                if (dealName) dealName.value = p.deal_name || '';
-                const dealSize = document.getElementById('dealSize');
-                if (dealSize) dealSize.value = p.deal_size || '';
-                const createdDate = document.getElementById('createdDate');
-                if (createdDate) createdDate.value = p.created_date || '';
-                const endDate = document.getElementById('endDate');
-                if (endDate) endDate.value = p.closed_date || '';
+                if (idInput) idInput.value = dealData.deals_id || '';
 
+                const dealName = document.getElementById('dealName');
+                if (dealName) dealName.value = dealData.deal_name || '';
+
+                const dealSize = document.getElementById('dealSize');
+                if (dealSize) dealSize.value = dealData.deal_size || '';
+
+                const createdDate = document.getElementById('createdDate');
+                if (createdDate) createdDate.value = dealData.created_date || '';
+
+                const endDate = document.getElementById('endDate');
+                if (endDate) endDate.value = dealData.closed_date || '';
+
+                // Store information
                 const storeId = document.getElementById('store_id');
                 const storeName = document.getElementById('store_name');
-                if (storeId) storeId.value = p.store_id || '';
-                if (storeName) storeName.value = p.store_name || '';
+                if (storeId) storeId.value = dealData.store_id || '';
+                if (storeName) storeName.value = dealData.store_name || '';
+
                 const $select = window.jQuery ? jQuery('#storeSelect') : null;
-                if ($select && $select.length) {
-                    const opt = new Option(p.store_name || '', p.store_id || '', true, true);
+                if ($select && $select.length && dealData.store_name) {
+                    const opt = new Option(dealData.store_name, dealData.store_id, true, true);
                     $select.append(opt).trigger('change');
                 }
 
+                // Additional fields
                 const email = document.getElementById('email');
-                if (email) email.value = p.email || '';
+                if (email) email.value = dealData.email || '';
+
                 const alamat = document.getElementById('customerAddress');
-                if (alamat) alamat.value = p.alamat_lengkap || '';
+                if (alamat) alamat.value = dealData.alamat_lengkap || '';
+
                 const notes = document.getElementById('notes');
-                if (notes) notes.value = p.notes || '';
+                if (notes) notes.value = dealData.notes || '';
+
+                // Customer info
+                const custName = document.getElementById('customerName');
+                if (custName) custName.value = dealData.cust_name || '';
+
+                const custPhone = document.getElementById('customerPhone');
+                if (custPhone) custPhone.value = dealData.no_telp_cust || '';
+
+                // Payment info
+                const paymentTerms = document.getElementById('paymentTerms');
+                if (paymentTerms) paymentTerms.value = dealData.payment_term || '';
+
+                const quotationExp = document.getElementById('quotationExpiredDate');
+                if (quotationExp) quotationExp.value = dealData.quotation_exp_date || '';
+
+                // Receipt info
+                const receiptNumber = document.getElementById('receiptNumber');
+                if (receiptNumber) receiptNumber.value = dealData.receipt_number || '';
+
+                // Lost reason
+                const lostReason = document.getElementById('failureReason');
+                if (lostReason) lostReason.value = dealData.lost_reason || '';
+
+                // Sales info
+                const salesIdVisit = document.getElementById('sales_id_visit');
+                if (salesIdVisit) salesIdVisit.value = dealData.sales_id_visit || '';
+
+                // Populate items if any
+                if (dealData.items && dealData.items.length > 0) {
+                    this.populateItemsFromDealData(dealData.items);
+                }
             }
 
+            populateItemsFromDealData(items) {
+                const container = document.getElementById('itemsContainer');
+                if (!container) return;
+
+                // Clear existing items except first row
+                const allRows = container.querySelectorAll('.item-row');
+                allRows.forEach((row, index) => {
+                    if (index > 0) row.remove();
+                });
+
+                // Populate items
+                items.forEach((item, index) => {
+                    let targetRow;
+                    if (index === 0) {
+                        // Use the default first row
+                        targetRow = container.querySelector('.item-row[data-item="0"]');
+                    } else {
+                        // Add new row for additional items
+                        this.addItemRow();
+                        targetRow = container.querySelector(`.item-row[data-item="${index}"]`);
+                    }
+
+                    if (targetRow && window.jQuery) {
+                        const $ = window.jQuery;
+
+                        // Set item selection
+                        const $itemSelect = $(targetRow).find('select.item-select');
+                        if ($itemSelect.length) {
+                            const option = new Option(item.item_name, item.item_no, true, true);
+                            $itemSelect.append(option).trigger('change');
+                        }
+
+                        // Set quantities and prices
+                        const qtyInput = targetRow.querySelector('input[name*="[qty]"]');
+                        if (qtyInput) qtyInput.value = item.quantity || '';
+
+                        const unitPriceInput = targetRow.querySelector('input[name*="[discountedPrice]"]');
+                        if (unitPriceInput) unitPriceInput.value = item.unit_price || '';
+
+                        const discInput = targetRow.querySelector('input.item-disc');
+                        if (discInput) discInput.value = item.discount_percent || '';
+
+                        // Recalculate total
+                        this.calculateItemTotal(targetRow);
+                    }
+                });
+
+                this.updateDealSizeFromItems();
+            }
             // ===== FORM HANDLING =====
             initializeForm() {
                 const form = document.getElementById('dealForm');
@@ -993,7 +1270,11 @@
                         cache: true
                     },
                     minimumInputLength: 0,
-                    width: '100%'
+                    width: '100%',
+                    // Fix: Allow manual option creation for existing data
+                    escapeMarkup: function(markup) {
+                        return markup;
+                    }
                 });
 
                 $select.on('select2:open', () => {
@@ -1014,6 +1295,52 @@
 
                 console.log('Select2 initialized for #storeSelect at', ajaxUrl);
             }
+            // ===== SALPER SELECT2 =====
+            initSalesSelect() {
+                if (!window.jQuery) {
+                    console.warn('jQuery not found; Sales Select2 not initialized');
+                    return;
+                }
+                const $ = window.jQuery;
+                const $select = $('#salesSelect');
+                if (!$select.length) return;
+
+                const ajaxUrl = '{{ route('salpers.search') }}';
+
+                $select.select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Cari & pilih Sales…',
+                    allowClear: true,
+                    dropdownParent: $('#dealModal'),
+                    ajax: {
+                        url: ajaxUrl,
+                        type: 'GET',
+                        dataType: 'json',
+                        delay: 250,
+                        data: params => ({
+                            q: params.term || ''
+                        }),
+                        processResults: data => data,
+                        cache: true,
+                    },
+                    minimumInputLength: 0,
+                    width: '100%'
+                });
+
+                $select.on('select2:select', (e) => {
+                    const d = e.params.data || {};
+                    $('#sales_id_visit').val(d.id || '');
+                    $('#sales_name').val(d.text || '');
+                });
+
+                $select.on('select2:clear', () => {
+                    $('#sales_id_visit').val('');
+                    $('#sales_name').val('');
+                });
+
+                console.log('Select2 initialized for Sales at', ajaxUrl);
+            }
+
 
             // ===== ITEM SELECT2 HELPERS =====
             computeDiscountedPrice(price, disc) {
@@ -1107,6 +1434,8 @@
                     kanbanBody.insertAdjacentHTML('afterbegin', card);
                     this.updateStageCount(column, 1);
                 }
+
+                this.addCardToList(deal, redirectUrl);
             }
 
             createKanbanCard(deal, redirectUrl) {
@@ -1114,29 +1443,20 @@
                 const createdDate = deal.created_at ? new Date(deal.created_at).toLocaleDateString('id-ID') : '-';
 
                 return `
-      <article class="kanban-card card mb-2 shadow-sm"
-               data-id="${deal.deals_id}"
-               data-stage="${deal.stage}"
-               data-deal-name="${deal.deal_name || ''}"
-               data-deal-size="${deal.deal_size || 0}"
-               data-created-date="${deal.created_at ? new Date(deal.created_at).toISOString().split('T')[0] : ''}"
-               data-closed-date="${deal.closed_date || ''}"
-               data-store-id="${deal.store_id || ''}"
-               data-store-name="${(deal.store && deal.store.store_name) ? deal.store.store_name : (deal.store_name || '')}"
-               data-email="${deal.email || ''}"
-               data-alamat="${deal.alamat_lengkap || ''}"
-               data-notes="${deal.notes || ''}">
-        <div class="card-body p-2">
-          <h3 class="fw-semibold h6 mb-1">${deal.deal_name}</h3>
-          <div class="small text-muted mb-1">${dealSize}</div>
-          <div class="small text-muted">
-            <i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>
-            ${createdDate}
-          </div>
-          <a href="${redirectUrl}" class="stretched-link" aria-label="View deal ${deal.deal_name}"></a>
-        </div>
-      </article>
-    `;
+            <article class="kanban-card card mb-2 shadow-sm"
+                     data-id="${deal.deals_id}"
+                     data-stage="${deal.stage}">
+                <div class="card-body p-2">
+                    <h3 class="fw-semibold h6 mb-1">${deal.deal_name}</h3>
+                    <div class="small text-muted mb-1">${dealSize}</div>
+                    <div class="small text-muted">
+                        <i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>
+                        ${createdDate}
+                    </div>
+                    <a href="${redirectUrl}" class="stretched-link" aria-label="View deal ${deal.deal_name}"></a>
+                </div>
+            </article>
+        `;
             }
 
             updateStageCount(column, delta) {
@@ -1394,6 +1714,156 @@
 
             to {
                 transform: translateX(0);
+            }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .kanban-grid {
+                display: none !important;
+                /* Force list view on mobile */
+            }
+
+            .action-bar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 12px;
+            }
+
+            .action-left,
+            .action-right {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .search-box {
+                flex: 1;
+                min-width: 200px;
+            }
+
+            .btn-group[role="group"] {
+                display: none !important;
+                /* Hide view toggle on mobile */
+            }
+
+            .page-header-wrap {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+
+            .page-header-currency {
+                position: static;
+                margin-top: 4px;
+            }
+
+            .table-responsive {
+                font-size: 14px;
+            }
+
+            .table td,
+            .table th {
+                padding: 8px 4px;
+                vertical-align: middle;
+            }
+
+            /* Hide less important columns on very small screens */
+            @media (max-width: 480px) {
+
+                .table td:nth-child(4),
+                /* Store column */
+                .table th:nth-child(4) {
+                    display: none;
+                }
+            }
+        }
+
+        /* List View Styles */
+        .list-view {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .list-view .table {
+            margin-bottom: 0;
+        }
+
+        .list-view .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            color: #495057;
+        }
+
+        .list-view .table td {
+            vertical-align: middle;
+        }
+
+        .list-view .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* View Toggle Button Improvements */
+        .btn-group .btn {
+            border-color: #dee2e6;
+        }
+
+        .btn-group .btn.active {
+            background: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+
+        /* Responsive Table */
+        .table-responsive {
+            border-radius: 8px;
+        }
+
+        @media (max-width: 576px) {
+
+            .table-responsive table,
+            .table-responsive thead,
+            .table-responsive tbody,
+            .table-responsive th,
+            .table-responsive td,
+            .table-responsive tr {
+                display: block;
+            }
+
+            .table-responsive thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            .table-responsive tr {
+                border: 1px solid #ccc;
+                margin-bottom: 8px;
+                border-radius: 4px;
+                padding: 8px;
+                background: #fff;
+            }
+
+            .table-responsive td {
+                border: none;
+                position: relative;
+                padding: 6px 8px 6px 50%;
+                text-align: left;
+            }
+
+            .table-responsive td:before {
+                content: attr(data-label) ": ";
+                position: absolute;
+                left: 6px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                font-weight: bold;
+                color: #666;
             }
         }
     </style>

@@ -25,27 +25,18 @@ class Deal extends Model
         'store_name',
         'no_rek_store',
         'email',
-        'salper_id_mapping',
         'alamat_lengkap',
         'notes',
-        'phto_upload',
-        'sales_id_visit',
+        'photo_upload',
         'id_cust',
         'cust_name',
         'no_telp_cust',
         'payment_term',
         'quotation_exp_date',
-        'sales_id_quotation',
         'quotation_upload',
-        'sales_id_won',
         'receipt_number',
         'receipt_upload',
         'lost_reason',
-        'item_no',
-        'item_name',
-        'item_qty',
-        'fix_price',
-        'total_price',
     ];
 
     protected $casts = [
@@ -53,22 +44,15 @@ class Deal extends Model
         'created_date' => 'date',
         'closed_date' => 'date',
         'quotation_exp_date' => 'date',
-        'phto_upload' => 'array',
+        'photo_upload' => 'array',
         'quotation_upload' => 'array',
         'receipt_upload' => 'array',
-        'item_qty' => 'integer',
-        'fix_price' => 'decimal:2',
-        'total_price' => 'decimal:2',
     ];
 
+    // Relationships
     public function store()
     {
         return $this->belongsTo(Store::class, 'store_id');
-    }
-
-    public function salperMapping()
-    {
-        return $this->belongsTo(Salper::class, 'salper_id_mapping');
     }
 
     public function customer()
@@ -76,13 +60,46 @@ class Deal extends Model
         return $this->belongsTo(DataCustomer::class, 'id_cust');
     }
 
-    public function item()
-    {
-        return $this->belongsTo(Item::class, 'item_no');
-    }
-
     public function points()
     {
         return $this->hasMany(Point::class, 'deals_id', 'deals_id');
+    }
+
+    public function dealItems()
+    {
+        return $this->hasMany(DealItem::class, 'deals_id', 'deals_id');
+    }
+
+    public function items()
+    {
+        return $this->belongsToMany(Item::class, 'deals_items', 'deals_id', 'item_no')
+            ->withPivot(['quantity', 'unit_price', 'discount_percent', 'line_total', 'notes'])
+            ->withTimestamps();
+    }
+
+    public function calculateTotalValue()
+    {
+        return $this->dealItems()->sum('line_total');
+    }
+
+    public function getFormattedDealSize()
+    {
+        $total = $this->deal_size ?? $this->calculateTotalValue();
+        return number_format($total, 2);
+    }
+
+    // Scopes
+    public function scopeByStage($query, $stage)
+    {
+        return $query->where('stage', $stage);
+    }
+
+    public function scopeSearch($query, $search)
+    {
+        return $query->where(function ($q) use ($search) {
+            $q->where('deal_name', 'like', "%{$search}%")
+                ->orWhere('deals_id', 'like', "%{$search}%")
+                ->orWhere('stage', 'like', "%{$search}%");
+        });
     }
 }

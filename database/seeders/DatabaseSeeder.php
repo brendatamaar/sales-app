@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call(StoreSeeder::class);
         $this->call(SalperSeeder::class);
         $this->call(ItemSeeder::class);
+        $this->call(BobotSeeder::class);
 
     }
 

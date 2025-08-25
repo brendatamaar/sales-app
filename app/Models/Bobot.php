@@ -23,20 +23,18 @@ class Bobot extends Model
         'point' => 'integer',
     ];
 
-    public function pointsAsMapping()
+    public function setStageAttribute($value): void
     {
-        return $this->hasMany(Point::class, 'bobot_mapping_id');
+        $this->attributes['stage'] = is_string($value) ? strtolower(trim($value)) : $value;
     }
-    public function pointsAsVisit()
+
+    public function points()
     {
-        return $this->hasMany(Point::class, 'bobot_id_visit');
+        return $this->hasMany(Point::class, 'stage', 'stage');
     }
-    public function pointsAsQuotation()
+
+    public function scopeForStage($query, string $stage)
     {
-        return $this->hasMany(Point::class, 'bobot_id_quotation');
-    }
-    public function pointsAsWon()
-    {
-        return $this->hasMany(Point::class, 'bobot_id_won');
+        return $query->where('stage', strtolower(trim($stage)));
     }
 }
