@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
+use App\Models\Deal;
+use App\Observers\DealObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         //
+        Deal::observe(DealObserver::class);
         Paginator::useBootstrap();
     }
 }
