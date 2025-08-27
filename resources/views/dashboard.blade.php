@@ -4,588 +4,555 @@
 @endpush
 
 @section('content')
-<div class="row">
-  <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 grid-margin stretch-card">
-    <div class="card card-statistics">
-      <div class="card-body">
-        <div
-          class="d-flex flex-md-column flex-xl-row flex-wrap justify-content-between align-items-md-center justify-content-xl-between">
-          <div class="float-left">
-            <i class="mdi mdi-cube text-danger icon-lg"></i>
-          </div>
-          <div class="float-right">
-            <p class="mb-0 text-right">Total Revenue</p>
-            <div class="fluid-container">
-              <h3 class="font-weight-medium text-right mb-0">$65,650</h3>
-            </div>
-          </div>
-        </div>
-        <p class="text-muted mt-3 mb-0 text-left text-md-center text-xl-left">
-          <i class="mdi mdi-alert-octagon mr-1" aria-hidden="true"></i> 65% lower growth
-        </p>
-      </div>
-    </div>
-  </div>
-  <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 grid-margin stretch-card">
-    <div class="card card-statistics">
-      <div class="card-body">
-        <div
-          class="d-flex flex-md-column flex-xl-row flex-wrap justify-content-between align-items-md-center justify-content-xl-between">
-          <div class="float-left">
-            <i class="mdi mdi-receipt text-warning icon-lg"></i>
-          </div>
-          <div class="float-right">
-            <p class="mb-0 text-right">Orders</p>
-            <div class="fluid-container">
-              <h3 class="font-weight-medium text-right mb-0">3455</h3>
-            </div>
-          </div>
-        </div>
-        <p class="text-muted mt-3 mb-0 text-left text-md-center text-xl-left">
-          <i class="mdi mdi-bookmark-outline mr-1" aria-hidden="true"></i> Product-wise sales
-        </p>
-      </div>
-    </div>
-  </div>
-  <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 grid-margin stretch-card">
-    <div class="card card-statistics">
-      <div class="card-body">
-        <div
-          class="d-flex flex-md-column flex-xl-row flex-wrap justify-content-between align-items-md-center justify-content-xl-between">
-          <div class="float-left">
-            <i class="mdi mdi-poll-box text-success icon-lg"></i>
-          </div>
-          <div class="float-right">
-            <p class="mb-0 text-right">Sales</p>
-            <div class="fluid-container">
-              <h3 class="font-weight-medium text-right mb-0">5693</h3>
-            </div>
-          </div>
-        </div>
-        <p class="text-muted mt-3 mb-0 text-left text-md-center text-xl-left">
-          <i class="mdi mdi-calendar mr-1" aria-hidden="true"></i> Weekly Sales
-        </p>
-      </div>
-    </div>
-  </div>
-  <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 grid-margin stretch-card">
-    <div class="card card-statistics">
-      <div class="card-body">
-        <div
-          class="d-flex flex-md-column flex-xl-row flex-wrap justify-content-between align-items-md-center justify-content-xl-between">
-          <div class="float-left">
-            <i class="mdi mdi-account-box-multiple text-info icon-lg"></i>
-          </div>
-          <div class="float-right">
-            <p class="mb-0 text-right">Employees</p>
-            <div class="fluid-container">
-              <h3 class="font-weight-medium text-right mb-0">246</h3>
-            </div>
-          </div>
-        </div>
-        <p class="text-muted mt-3 mb-0 text-left text-md-center text-xl-left">
-          <i class="mdi mdi-reload mr-1" aria-hidden="true"></i> Product-wise sales
-        </p>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-12 grid-margin">
-    <div class="card">
-      <div class="card-body">
-        <div class="d-sm-flex justify-content-between align-items-center mb-4">
-          <h2 class="card-title mb-0">Product Analysis</h2>
-          <div class="wrapper d-flex">
-            <div class="d-flex align-items-center mr-3">
-              <span class="dot-indicator bg-success"></span>
-              <p class="mb-0 ml-2 text-muted">Product</p>
-            </div>
-            <div class="d-flex align-items-center">
-              <span class="dot-indicator bg-primary"></span>
-              <p class="mb-0 ml-2 text-muted">Resources</p>
-            </div>
-          </div>
-        </div>
-        <div class="chart-container">
-          <canvas id="dashboard-area-chart" height="80"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-6 col-xl-4 grid-margin stretch-card">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="card-title">Todo</h4>
-        <div class="add-items d-flex">
-          <input type="text" class="form-control todo-list-input" placeholder="What do you need to do today?">
-          <button class="add btn btn-primary font-weight-medium todo-list-add-btn">Add</button>
-        </div>
-        <div class="list-wrapper">
-          <ul class="d-flex flex-column-reverse todo-list todo-list-custom">
-            <li class="completed">
-              <div class="form-check form-check-flat">
-                <label class="form-check-label">
-                  <input class="checkbox" type="checkbox" checked> Call John </label>
-              </div>
-              <i class="remove mdi mdi-close-circle-outline"></i>
-            </li>
-            <li>
-              <div class="form-check form-check-flat">
-                <label class="form-check-label">
-                  <input class="checkbox" type="checkbox"> Create invoice </label>
-              </div>
-              <i class="remove mdi mdi-close-circle-outline"></i>
-            </li>
-            <li>
-              <div class="form-check form-check-flat">
-                <label class="form-check-label">
-                  <input class="checkbox" type="checkbox"> Print Statements </label>
-              </div>
-              <i class="remove mdi mdi-close-circle-outline"></i>
-            </li>
-            <li class="completed">
-              <div class="form-check form-check-flat">
-                <label class="form-check-label">
-                  <input class="checkbox" type="checkbox" checked> Prepare for presentation </label>
-              </div>
-              <i class="remove mdi mdi-close-circle-outline"></i>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6 col-xl-4 grid-margin stretch-card">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="card-title">Schedules</h4>
-        <div class="shedule-list d-flex align-items-center justify-content-between mb-3">
-          <h3>27 Sep 2018</h3>
-          <small>21 Events</small>
-        </div>
-        <div class="event border-bottom py-3">
-          <p class="mb-2 font-weight-medium">Skype call with alex</p>
-          <div class="d-flex align-items-center">
-            <div class="badge badge-success">3:45 AM</div>
-            <small class="text-muted ml-2">London, UK</small>
-            <div class="image-grouped ml-auto">
-              <img src="{{ url('assets/images/faces/face10.jpg') }}" alt="profile image">
-              <img src="{{ url('assets/images/faces/face13.jpg') }}" alt="profile image">
-            </div>
-          </div>
-        </div>
-        <div class="event py-3 border-bottom">
-          <p class="mb-2 font-weight-medium">Data Analysing with team</p>
-          <div class="d-flex align-items-center">
-            <div class="badge badge-warning">12.30 AM</div>
-            <small class="text-muted ml-2">San Francisco, CA</small>
-            <div class="image-grouped ml-auto">
-              <img src="{{ url('assets/images/faces/face20.jpg') }}" alt="profile image">
-              <img src="{{ url('assets/images/faces/face17.jpg') }}" alt="profile image">
-              <img src="{{ url('assets/images/faces/face14.jpg') }}" alt="profile image">
-            </div>
-          </div>
-        </div>
-        <div class="event py-3">
-          <p class="mb-2 font-weight-medium">Meeting with client</p>
-          <div class="d-flex align-items-center">
-            <div class="badge badge-danger">4.15 AM</div>
-            <small class="text-muted ml-2">San Diego, CA</small>
-            <div class="image-grouped ml-auto">
-              <img src="{{ url('assets/images/faces/face21.jpg') }}" alt="profile image">
-              <img src="{{ url('assets/images/faces/face16.jpg') }}" alt="profile image">
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-12 col-xl-4 grid-margin stretch-card">
-    <div class="row flex-grow">
-      <div class="col-md-6 col-xl-12 grid-margin grid-margin-md-0 grid-margin-xl stretch-card">
-        <div class="card card-revenue">
-          <div class="card-body d-flex align-items-center">
-            <div class="d-flex flex-grow">
-              <div class="mr-auto">
-                <p class="highlight-text mb-0 text-white"> $168.90 </p>
-                <p class="text-white"> This Month </p>
-                <div class="badge badge-pill"> 18% </div>
-              </div>
-              <div class="ml-auto align-self-end">
-                <div id="revenue-chart" sparkType="bar" sparkBarColor="#e6ecf5" barWidth="2"> 4,3,10,9,4,3,8,6,7,8
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ route('home') }}" class="row align-items-end">
+                {{-- Bulan --}}
+                <div class="col-md-3">
+                    <label class="mb-1">Bulan</label>
+                    <input type="date" name="date" class="form-control"
+                        value="{{ old('date', $filters['date'] ?? '') }}" />
                 </div>
-              </div>
-            </div>
-          </div>
+
+                {{-- Store --}}
+                <div class="col-md-4">
+                    <label class="mb-1">Store</label>
+                    <select id="filter-store" name="store_id" class="form-control" data-placeholder="Pilih store">
+                        @if (!empty($filters['store_id']))
+                            <option value="{{ $filters['store_id'] }}" selected>Selected Store</option>
+                        @endif
+                    </select>
+                </div>
+
+                {{-- User --}}
+                <div class="col-md-4">
+                    <label class="mb-1">User</label>
+                    <select id="filter-user" name="user_id" class="form-control" data-placeholder="Pilih user">
+                        @if (!empty($filters['user_id']))
+                            <option value="{{ $filters['user_id'] }}" selected>Selected User</option>
+                        @endif
+                    </select>
+                </div>
+
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary btn-block">Filter</button>
+                </div>
+            </form>
         </div>
-      </div>
-      <div class="col-md-6 col-xl-12 stretch-card">
-        <div class="card card-revenue-table">
-          <div class="card-body">
-            <div class="revenue-item d-flex">
-              <div class="revenue-desc">
-                <h6>Member Profit</h6>
-                <p class="font-weight-light"> Average Weekly Profit </p>
-              </div>
-              <div class="revenue-amount">
-                <p class="text-primary"> +168.900 </p>
-              </div>
-            </div>
-            <div class="revenue-item d-flex">
-              <div class="revenue-desc">
-                <h6>Total Profit</h6>
-                <p class="font-weight-light"> Weekly Customer Orders </p>
-              </div>
-              <div class="revenue-amount">
-                <p class="text-primary"> +6890.00 </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
-</div>
-<div class="row">
-  <div class="col-sm-6 col-md-6 col-lg-6 grid-margin stretch-card">
-    <div class="card">
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-5 d-flex align-items-center">
-            <canvas id="UsersDoughnutChart" class="400x160 mb-4 mb-md-0" height="200"></canvas>
-          </div>
-          <div class="col-md-7">
-            <h4 class="card-title font-weight-medium mb-0 d-none d-md-block">Active Users</h4>
-            <div class="wrapper mt-4">
-              <div class="d-flex justify-content-between mb-2">
-                <div class="d-flex align-items-center">
-                  <p class="mb-0 font-weight-medium">67,550</p>
-                  <small class="text-muted ml-2">Email account</small>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 g-3" style="margin-bottom: 20px;">
+        {{-- Mapping --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-map-marker-outline text-danger icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Mapping</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($total_datas['mapping'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals in mapping
+                    </p>
                 </div>
-                <p class="mb-0 font-weight-medium">80%</p>
-              </div>
-              <div class="progress">
-                <div class="progress-bar bg-primary" role="progressbar" style="width: 88%" aria-valuenow="88"
-                  aria-valuemin="0" aria-valuemax="100"></div>
-              </div>
             </div>
-            <div class="wrapper mt-4">
-              <div class="d-flex justify-content-between mb-2">
-                <div class="d-flex align-items-center">
-                  <p class="mb-0 font-weight-medium">21,435</p>
-                  <small class="text-muted ml-2">Requests</small>
-                </div>
-                <p class="mb-0 font-weight-medium">34%</p>
-              </div>
-              <div class="progress">
-                <div class="progress-bar bg-success" role="progressbar" style="width: 34%" aria-valuenow="34"
-                  aria-valuemin="0" aria-valuemax="100"></div>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-md-6 col-lg-6 grid-margin stretch-card">
-    <div class="card">
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-7">
-            <h4 class="card-title font-weight-medium mb-3">Amount Due</h4>
-            <h1 class="font-weight-medium mb-0">$5998</h1>
-            <p class="text-muted">Milestone Completed</p>
-            <p class="mb-0">Payment for next week</p>
-          </div>
-          <div class="col-md-5 d-flex align-items-end mt-4 mt-md-0">
-            <canvas id="conversionBarChart" height="150"></canvas>
-          </div>
+
+        {{-- Visit --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-account-search text-warning icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Visit</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($total_datas['visit'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals in visit
+                    </p>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 grid-margin stretch-card">
-    <div class="card">
-      <div class="card-body py-5">
-        <div class="d-flex flex-row justify-content-center align-items">
-          <i class="mdi mdi-facebook text-facebook icon-lg"></i>
-          <div class="ml-3">
-            <h6 class="text-facebook font-weight-semibold mb-0">2.62 Subscribers</h6>
-            <p class="text-muted card-text">You main list growing</p>
-          </div>
+
+        {{-- Quotation --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-file-document-box-check-outline text-success icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Quotation</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($total_datas['quotation'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals in quotation
+                    </p>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 grid-margin stretch-card">
-    <div class="card">
-      <div class="card-body py-5">
-        <div class="d-flex flex-row justify-content-center align-items">
-          <i class="mdi mdi-google-plus text-google icon-lg"></i>
-          <div class="ml-3">
-            <h6 class="text-google font-weight-semibold mb-0">3.4k Followers</h6>
-            <p class="text-muted card-text">You main list growing</p>
-          </div>
+
+        {{-- Won --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-trophy-outline text-info icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Won</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($total_datas['won'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals won
+                    </p>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 grid-margin stretch-card">
-    <div class="card">
-      <div class="card-body py-5">
-        <div class="d-flex flex-row justify-content-center align-items">
-          <i class="mdi mdi-twitter text-twitter icon-lg"></i>
-          <div class="ml-3">
-            <h6 class="text-twitter font-weight-semibold mb-0">3k followers</h6>
-            <p class="text-muted card-text">You main list growing</p>
-          </div>
+
+        {{-- Lost --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-close-circle-outline text-secondary icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Lost</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($total_datas['lost'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals lost
+                    </p>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-</div>
-<div class="row">
-  <div class="col-lg-12 grid-margin">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="card-title">Orders</h4>
-        <div class="table-responsive">
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th> # </th>
-                <th> First name </th>
-                <th> Progress </th>
-                <th> Amount </th>
-                <th> Sales </th>
-                <th> Deadline </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="font-weight-medium"> 1 </td>
-                <td> Herman Beck </td>
-                <td>
-                  <div class="progress">
-                    <div class="progress-bar bg-success progress-bar-striped" role="progressbar" style="width: 25%"
-                      aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-                  </div>
-                </td>
-                <td> $ 77.99 </td>
-                <td class="text-danger"> 53.64% <i class="mdi mdi-arrow-down"></i>
-                </td>
-                <td> May 15, 2015 </td>
-              </tr>
-              <tr>
-                <td class="font-weight-medium"> 2 </td>
-                <td> Messsy Adam </td>
-                <td>
-                  <div class="progress">
-                    <div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: 75%"
-                      aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
-                  </div>
-                </td>
-                <td> $245.30 </td>
-                <td class="text-success"> 24.56% <i class="mdi mdi-arrow-up"></i>
-                </td>
-                <td> July 1, 2015 </td>
-              </tr>
-              <tr>
-                <td class="font-weight-medium"> 3 </td>
-                <td> John Richards </td>
-                <td>
-                  <div class="progress">
-                    <div class="progress-bar bg-warning progress-bar-striped" role="progressbar" style="width: 90%"
-                      aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"></div>
-                  </div>
-                </td>
-                <td> $138.00 </td>
-                <td class="text-danger"> 28.76% <i class="mdi mdi-arrow-down"></i>
-                </td>
-                <td> Apr 12, 2015 </td>
-              </tr>
-              <tr>
-                <td class="font-weight-medium"> 4 </td>
-                <td> Peter Meggik </td>
-                <td>
-                  <div class="progress">
-                    <div class="progress-bar bg-primary progress-bar-striped" role="progressbar" style="width: 50%"
-                      aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                  </div>
-                </td>
-                <td> $ 77.99 </td>
-                <td class="text-danger"> 53.45% <i class="mdi mdi-arrow-down"></i>
-                </td>
-                <td> May 15, 2015 </td>
-              </tr>
-              <tr>
-                <td class="font-weight-medium"> 5 </td>
-                <td> Edward </td>
-                <td>
-                  <div class="progress">
-                    <div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: 35%"
-                      aria-valuenow="35" aria-valuemin="0" aria-valuemax="100"></div>
-                  </div>
-                </td>
-                <td> $ 160.25 </td>
-                <td class="text-success"> 18.32% <i class="mdi mdi-arrow-up"></i>
-                </td>
-                <td> May 03, 2015 </td>
-              </tr>
-            </tbody>
-          </table>
+
+    <div class="row">
+        <div class="col-md-12 grid-margin">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-sm-flex justify-content-between align-items-center mb-3">
+                        <h2 class="card-title mb-0">Dominant Category by Deal</h2>
+                        <div>
+                            <span class="badge bg-light text-dark">Deals Count</span>
+                            <span class="badge bg-light text-dark">Total Deal Size</span>
+                        </div>
+                    </div>
+                    <canvas id="category-bar-chart"></canvas>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-</div>
-<div class="row">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title mb-4">Manage Tickets</h5>
-        <div class="fluid-container">
-          <div class="row ticket-card mt-3 pb-2 border-bottom pb-3 mb-3">
-            <div class="col-md-1">
-              <img class="img-sm rounded-circle mb-4 mb-md-0 d-block mx-md-auto"
-                src="{{ url('assets/images/faces/face1.jpg') }}" alt="profile image">
-            </div>
-            <div class="ticket-details col-md-9">
-              <div class="d-flex">
-                <p class="text-dark font-weight-semibold mr-2 mb-0 no-wrap">James :</p>
-                <p class="text-primary mr-1 mb-0">[#23047]</p>
-                <p class="mb-0 ellipsis">Donec rutrum congue leo eget malesuada.</p>
-              </div>
-              <p class="text-gray ellipsis mb-2">Donec rutrum congue leo eget malesuada. Quisque velit nisi, pretium ut
-                lacinia in, elementum id enim vivamus. </p>
-              <div class="row text-gray d-md-flex d-none">
-                <div class="col-4 d-flex">
-                  <small class="mb-0 mr-2 text-muted text-muted">Last responded :</small>
-                  <small class="Last-responded mr-2 mb-0 text-muted text-muted">3 hours ago</small>
+
+    <div class="row g-3 mt-3">
+
+        {{-- 1) Salper poin terbanyak --}}
+        <div class="col-12 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Top Salper by Points</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Salper</th>
+                                    <th class="text-end">Points</th>
+                                    <th class="text-end">Deals</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($topSalpers as $i => $row)
+                                    <tr>
+                                        <td>{{ $i + 1 }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ $row->salper_name }}</div>
+                                            <div class="text-muted small">ID: {{ $row->salper_id }}</div>
+                                        </td>
+                                        <td class="text-end">{{ number_format($row->total_points) }}</td>
+                                        <td class="text-end">{{ number_format($row->deals_count) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No data</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="col-4 d-flex">
-                  <small class="mb-0 mr-2 text-muted text-muted">Due in :</small>
-                  <small class="Last-responded mr-2 mb-0 text-muted text-muted">2 Days</small>
-                </div>
-              </div>
             </div>
-            <div class="ticket-actions col-md-2">
-              <div class="btn-group dropdown">
-                <button type="button" class="btn btn-success dropdown-toggle btn-sm" data-toggle="dropdown"
-                  aria-haspopup="true" aria-expanded="false"> Manage </button>
-                <div class="dropdown-menu">
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-reply fa-fw"></i>Quick reply</a>
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-history fa-fw"></i>Another action</a>
-                  <div class="dropdown-divider"></div>
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-check text-success fa-fw"></i>Resolve Issue</a>
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-times text-danger fa-fw"></i>Close Issue</a>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row ticket-card mt-3 pb-2 border-bottom pb-3 mb-3">
-            <div class="col-md-1">
-              <img class="img-sm rounded-circle mb-4 mb-md-0 d-block mx-md-auto"
-                src="{{ url('assets/images/faces/face2.jpg') }}" alt="profile image">
-            </div>
-            <div class="ticket-details col-md-9">
-              <div class="d-flex">
-                <p class="text-dark font-weight-semibold mr-2 mb-0 no-wrap">Stella :</p>
-                <p class="text-primary mr-1 mb-0">[#23135]</p>
-                <p class="mb-0 ellipsis">Curabitur aliquet quam id dui posuere blandit.</p>
-              </div>
-              <p class="text-gray ellipsis mb-2">Pellentesque in ipsum id orci porta dapibus. Sed porttitor lectus nibh.
-                Curabitur non nulla sit amet nisl. </p>
-              <div class="row text-gray d-md-flex d-none">
-                <div class="col-4 d-flex">
-                  <small class="mb-0 mr-2 text-muted">Last responded :</small>
-                  <small class="Last-responded mr-2 mb-0 text-muted">3 hours ago</small>
-                </div>
-                <div class="col-4 d-flex">
-                  <small class="mb-0 mr-2 text-muted">Due in :</small>
-                  <small class="Last-responded mr-2 mb-0 text-muted">2 Days</small>
-                </div>
-              </div>
-            </div>
-            <div class="ticket-actions col-md-2">
-              <div class="btn-group dropdown">
-                <button type="button" class="btn btn-success dropdown-toggle btn-sm" data-toggle="dropdown"
-                  aria-haspopup="true" aria-expanded="false"> Manage </button>
-                <div class="dropdown-menu">
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-reply fa-fw"></i>Quick reply</a>
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-history fa-fw"></i>Another action</a>
-                  <div class="dropdown-divider"></div>
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-check text-success fa-fw"></i>Resolve Issue</a>
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-times text-danger fa-fw"></i>Close Issue</a>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row ticket-card mt-3">
-            <div class="col-md-1">
-              <img class="img-sm rounded-circle mb-4 mb-md-0 d-block mx-md-auto"
-                src="{{ url('assets/images/faces/face3.jpg') }}" alt="profile image">
-            </div>
-            <div class="ticket-details col-md-9">
-              <div class="d-flex">
-                <p class="text-dark font-weight-semibold mr-2 mb-0 no-wrap">John Doe :</p>
-                <p class="text-primary mr-1 mb-0">[#23246]</p>
-                <p class="mb-0 ellipsis">Mauris blandit aliquet elit, eget tincidunt nibh pulvinar.</p>
-              </div>
-              <p class="text-gray ellipsis mb-2">Nulla quis lorem ut libero malesuada feugiat. Proin eget tortor risus.
-                Lorem ipsum dolor sit amet.</p>
-              <div class="row text-gray d-md-flex d-none">
-                <div class="col-4 d-flex">
-                  <small class="mb-0 mr-2 text-muted">Last responded :</small>
-                  <small class="Last-responded mr-2 mb-0 text-muted">3 hours ago</small>
-                </div>
-                <div class="col-4 d-flex">
-                  <small class="mb-0 mr-2 text-muted">Due in :</small>
-                  <small class="Last-responded mr-2 mb-0 text-muted">2 Days</small>
-                </div>
-              </div>
-            </div>
-            <div class="ticket-actions col-md-2">
-              <div class="btn-group dropdown">
-                <button type="button" class="btn btn-success dropdown-toggle btn-sm" data-toggle="dropdown"
-                  aria-haspopup="true" aria-expanded="false"> Manage </button>
-                <div class="dropdown-menu">
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-reply fa-fw"></i>Quick reply</a>
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-history fa-fw"></i>Another action</a>
-                  <div class="dropdown-divider"></div>
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-check text-success fa-fw"></i>Resolve Issue</a>
-                  <a class="dropdown-item" href="#">
-                    <i class="fa fa-times text-danger fa-fw"></i>Close Issue</a>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+
+        {{-- 2) Value transaksi terbesar (per deal) --}}
+        <div class="col-12 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Top Deals by Value</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Deal</th>
+                                    <th>Customer</th>
+                                    <th class="text-end">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($topDeals as $i => $row)
+                                    <tr>
+                                        <td>{{ $i + 1 }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ $row->deal_name ?? $row->deals_id }}</div>
+                                            <div class="text-muted small">ID: {{ $row->deals_id }}</div>
+                                            @if (!empty($row->store_name))
+                                                <div class="text-muted small">{{ $row->store_name }}</div>
+                                            @endif
+                                        </td>
+                                        <td>{{ $row->cust_name ?? '-' }}</td>
+                                        <td class="text-end">{{ number_format((float) $row->deal_size, 2) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No data</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 3) Customer terbanyak transaksi --}}
+        <div class="col-12 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Top Customers by Transactions</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Customer</th>
+                                    <th class="text-end">Transaksi</th>
+                                    <th class="text-end">Total Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($topCustomers as $i => $row)
+                                    <tr>
+                                        <td>{{ $i + 1 }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ $row->cust_name }}</div>
+                                            <div class="text-muted small">ID: {{ $row->id_cust ?? '-' }}</div>
+                                        </td>
+                                        <td class="text-end">{{ number_format($row->transaksi) }}</td>
+                                        <td class="text-end">{{ number_format((float) $row->total_value, 2) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No data</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
-  </div>
-</div>
+
+    <div class="row g-3 mt-3">
+        {{-- Average Effectivity Visit --}}
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-1">Average Effectivity Visit</h5>
+                        <div class="text-muted small">won / visit</div>
+                        <div class="mt-2">
+                            <span class="badge bg-light text-dark me-2">Won:
+                                {{ number_format($total_datas['won'] ?? 0) }}</span>
+                            <span class="badge bg-light text-dark">Visit:
+                                {{ number_format($total_datas['visit'] ?? 0) }}</span>
+                        </div>
+                    </div>
+                    <div style="width:140px; height:140px; position:relative;">
+                        <canvas id="gauge-visit" style="width:140px; height:140px;"></canvas>
+                        <div
+                            style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:600;">
+                            {{ number_format($effectivity['visit'] ?? 0, 1) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Average Effectivity Quotation --}}
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-1">Average Effectivity Quotation</h5>
+                        <div class="text-muted small">won / quotation</div>
+                        <div class="mt-2">
+                            <span class="badge bg-light text-dark me-2">Won:
+                                {{ number_format($total_datas['won'] ?? 0) }}</span>
+                            <span class="badge bg-light text-dark">Quotation:
+                                {{ number_format($total_datas['quotation'] ?? 0) }}</span>
+                        </div>
+                    </div>
+                    <div style="width:140px; height:140px; position:relative;">
+                        <canvas id="gauge-quotation" style="width:140px; height:140px;"></canvas>
+                        <div
+                            style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:600;">
+                            {{ number_format($effectivity['quotation'] ?? 0, 1) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Lost Reasons</h5>
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <canvas id="lost-reason-chart" style="height:320px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('plugin-scripts')
-  <script src="{{ asset('assets/plugins/chartjs/chart.min.js') }}"></script>
-  <script src="{{ asset('assets/plugins/jquery-sparkline/jquery.sparkline.min.js') }}"></script>
 @endpush
 
 @push('custom-scripts')
-  <script src="{{ asset('assets/js/dashboard.js') }}"></script>
+    {{-- Your custom dashboard script --}}
+    <script src="{{ asset('assets/js/dashboard.js') }}"></script>
+
+    {{-- Chart.js (CDN version, latest v4) --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    {{-- jQuery Sparkline (optional if you still need it) --}}
+    <script src="{{ asset('assets/plugins/jquery-sparkline/jquery.sparkline.min.js') }}"></script>
+
+    {{-- Select2 core + bootstrap theme --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Select2 init ---
+            $('#filter-store').select2({
+                width: '100%',
+                placeholder: $('#filter-store').data('placeholder') || 'Pilih store',
+                allowClear: true,
+                ajax: {
+                    url: '{{ route('stores.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: params => ({
+                        q: params.term,
+                        limit: 20
+                    }),
+                    processResults: data => ({
+                        results: data.results
+                    }),
+                    cache: true
+                }
+            });
+
+            $('#filter-user').select2({
+                width: '100%',
+                placeholder: $('#filter-user').data('placeholder') || 'Pilih user',
+                allowClear: true,
+                ajax: {
+                    url: '{{ route('users.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: params => ({
+                        q: params.term,
+                        limit: 20
+                    }),
+                    processResults: data => ({
+                        results: data.results
+                    }),
+                    cache: true
+                }
+            });
+
+            // --- Category Bar Chart ---
+            const barCanvas = document.getElementById('category-bar-chart');
+            if (barCanvas) {
+                const dataFromServer = @json($categoryBar ?? ['labels' => [], 'deals' => [], 'values' => []]);
+
+                new Chart(barCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: dataFromServer.labels,
+                        datasets: [{
+                                label: 'Deals',
+                                data: dataFromServer.deals,
+                                yAxisID: 'yDeals',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Deal Size',
+                                data: dataFromServer.values,
+                                yAxisID: 'yValue',
+                                type: 'bar',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: true
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        if (context.dataset.yAxisID === 'yValue') {
+                                            const val = context.parsed.y ?? 0;
+                                            return `${context.dataset.label}: ${new Intl.NumberFormat().format(val)}`;
+                                        }
+                                        return `${context.dataset.label}: ${context.parsed.y ?? 0}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    autoSkip: false,
+                                    maxRotation: 45,
+                                    minRotation: 0
+                                }
+                            },
+                            yDeals: {
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: 'Deals'
+                                },
+                                beginAtZero: true,
+                                grid: {
+                                    drawOnChartArea: true
+                                }
+                            },
+                            yValue: {
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: 'Total Deal Size'
+                                },
+                                beginAtZero: true,
+                                grid: {
+                                    drawOnChartArea: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- Effectivity Gauges ---
+            function renderGauge(canvasId, percent) {
+                const el = document.getElementById(canvasId);
+                if (!el) return;
+
+                const val = Math.max(0, Math.min(100, Number(percent || 0)));
+                const data = [val, 100 - val];
+
+                new Chart(el.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Completed', 'Remaining'],
+                        datasets: [{
+                            data: data,
+                            backgroundColor: ['#4CAF50', '#E0E0E0'], // green + grey
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        cutout: '70%',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => `${ctx.label}: ${ctx.parsed}%`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const eff = @json($effectivity ?? ['visit' => 0, 'quotation' => 0]);
+            renderGauge('gauge-visit', eff.visit);
+            renderGauge('gauge-quotation', eff.quotation);
+
+            // --- Lost Reason Pie Chart ---
+            const lostCanvas = document.getElementById('lost-reason-chart');
+            if (lostCanvas) {
+                const lostData = @json($lostReasonChart ?? ['labels' => [], 'data' => []]);
+
+                new Chart(lostCanvas.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: lostData.labels,
+                        datasets: [{
+                            data: lostData.data,
+                            backgroundColor: [
+                                '#f44336', '#ff9800', '#ffc107', '#4caf50', '#2196f3',
+                                '#9c27b0', '#00bcd4', '#795548', '#607d8b', '#e91e63'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const val = context.parsed ?? 0;
+                                        const total = context.chart._metasets[0].total ||
+                                            context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const pct = total ? ((val / total) * 100).toFixed(1) : 0;
+                                        return `${context.label}: ${val} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 @endpush

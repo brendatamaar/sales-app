@@ -56,6 +56,14 @@
             </a>
         </li>
 
+
+        <li class="nav-item {{ Route::is('customers.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('customers.index') }}">
+                <i class="menu-icon mdi mdi-account-box"></i>
+                <span class="menu-title">Customers</span>
+            </a>
+        </li>
+
         <li class="nav-item {{ Route::is('products.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('products.index') }}">
                 <i class="menu-icon mdi mdi-package-variant"></i>
@@ -78,7 +86,7 @@
         </li>
         <li class="nav-item {{ Route::is('users.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('users.index') }}">
-                <i class="menu-icon mdi mdi-user"></i>
+                <i class="menu-icon mdi mdi-account-circle"></i>
                 <span class="menu-title">Users</span>
             </a>
         </li>

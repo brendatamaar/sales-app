@@ -271,20 +271,31 @@
                                 <div class="col-md-6">
                                     <label for="salesSelect" class="form-label">Sales <span
                                             class="text-danger">*</span></label>
-                                    <select id="salesSelect" class="form-select"></select>
-                                    <input type="hidden" name="sales_id_visit" id="sales_id_visit">
-                                    <input type="hidden" name="sales_name_placeholder" id="sales_name">
+                                    <select id="salesSelect" name="salper_ids[]" class="form-select" multiple></select>
+                                    <div class="form-text">Pilih satu atau beberapa sales yang terlibat pada stage ini.
+                                    </div>
                                 </div>
                             </div>
                         </fieldset>
 
                         {{-- Customer Information --}}
                         <fieldset class="form-section mb-4" id="customerInfoSection">
-                            <legend class="h6"><i class="fas fa-user me-2" aria-hidden="true"></i> Informasi Customer
-                            </legend>
-                            <div class="form-group">
-                                <label for="customerAddress" class="form-label">Alamat Lengkap Customer</label>
-                                <textarea class="form-control" id="customerAddress" name="alamat_lengkap" rows="3"></textarea>
+                            <legend class="h6"><i class="fas fa-user me-2"></i> Informasi Customer</legend>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="customerSelect" class="form-label">Customer <span
+                                            class="text-danger">*</span></label>
+                                    <select id="customerSelect" class="form-select"></select>
+                                    <input type="hidden" name="id_cust" id="id_cust">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="customerPhone" class="form-label">No Telp Customer</label>
+                                    <input type="tel" class="form-control" id="customerPhone" name="no_telp_cust">
+                                </div>
+                                <div class="col-12">
+                                    <label for="customerAddress" class="form-label">Alamat Lengkap Customer</label>
+                                    <textarea class="form-control" id="customerAddress" name="cust_address" rows="2"></textarea>
+                                </div>
                             </div>
                         </fieldset>
 
@@ -310,22 +321,6 @@
                             </div>
                         </fieldset>
 
-                        {{-- Additional Customer Info (VISIT+) --}}
-                        <fieldset class="form-section mb-4 stage-conditional" id="additionalCustomerSection"
-                            data-stages="visit,quotation,won,lost">
-                            <legend class="h6"><i class="fas fa-user-plus me-2" aria-hidden="true"></i> Informasi
-                                Customer Tambahan</legend>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label for="customerPhone" class="form-label">No Telp Customer</label>
-                                    <input type="tel" class="form-control" id="customerPhone" name="no_telp_cust">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="customerName" class="form-label">Nama Customer</label>
-                                    <input type="text" class="form-control" id="customerName" name="cust_name">
-                                </div>
-                            </div>
-                        </fieldset>
 
                         {{-- Payment & Quotation (VISIT+) --}}
                         <fieldset class="form-section mb-4 stage-conditional" id="paymentSection"
@@ -416,12 +411,9 @@
                             data-stages="quotation,won,lost">
                             <legend class="h6"><i class="fas fa-file-contract me-2" aria-hidden="true"></i> Quotation
                                 Upload</legend>
-                            <div class="form-group">
-                                <label for="quotationUpload" class="form-label">Quotation Upload</label>
-                                <input type="file" class="form-control" id="quotationUpload"
-                                    name="quotation_upload[]" accept=".pdf,.doc,.docx" multiple>
-                                <div class="form-text">Format: PDF, DOC, DOCX. Maksimal 10MB per file</div>
-                            </div>
+
+                            <button type="button" class="btn btn-success btn-sm mt-2" id="generateQuotationBtn">Generate
+                                Quotation</button>
                         </fieldset>
 
                         {{-- Receipt (WON) --}}
@@ -503,6 +495,7 @@
                 this.initializeForm();
                 this.setupItemCalculations();
                 this.initStoreSelect();
+                this.initCustomerSelect();
                 this.initAllItemSelects();
                 this.initSalesSelect();
             }
@@ -888,8 +881,15 @@
                 if (lostReason) lostReason.value = dealData.lost_reason || '';
 
                 // Sales info
-                const salesIdVisit = document.getElementById('sales_id_visit');
-                if (salesIdVisit) salesIdVisit.value = dealData.sales_id_visit || '';
+                if (Array.isArray(dealData.salper_ids) && window.jQuery) {
+                    const $ = window.jQuery;
+                    const $select = $('#salesSelect');
+                    dealData.salper_ids.forEach(sid => {
+                        const opt = new Option(String(sid), String(sid), true, true);
+                        $select.append(opt);
+                    });
+                    $select.trigger('change');
+                }
 
                 // Populate items if any
                 if (dealData.items && dealData.items.length > 0) {
@@ -1084,6 +1084,9 @@
                 const stageHidden = document.getElementById('stage_hidden');
                 if (stageHidden) stageHidden.value = stageLower;
                 this.toggleStageSections(stageLower);
+
+                const btnGen = document.getElementById('generateQuotationBtn');
+                if (btnGen) btnGen.classList.toggle('d-none', stageLower !== 'quotation');
             }
 
             toggleStageSections(currentStage) {
@@ -1295,6 +1298,54 @@
 
                 console.log('Select2 initialized for #storeSelect at', ajaxUrl);
             }
+            // ===== CUSTOMER SELECT2 =====
+            initCustomerSelect() {
+                if (!window.jQuery) {
+                    console.warn('jQuery not found; Customer Select2 not initialized');
+                    return;
+                }
+                const $ = window.jQuery;
+                const $select = $('#customerSelect');
+                if (!$select.length) return;
+
+                const ajaxUrl = '{{ route('customers.search') }}';
+
+                $select.select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Cari & pilih Customer…',
+                    allowClear: true,
+                    dropdownParent: $('#dealModal'),
+                    ajax: {
+                        url: ajaxUrl,
+                        type: 'GET',
+                        dataType: 'json',
+                        delay: 250,
+                        data: params => ({
+                            q: params.term || ''
+                        }),
+                        processResults: data => data,
+                        cache: true,
+                    },
+                    minimumInputLength: 0,
+                    width: '100%'
+                });
+
+                $select.on('select2:select', (e) => {
+                    const d = e.params.data || {};
+                    $('#id_cust').val(d.id || '');
+                    $('#customerPhone').val(d.phone || '');
+                    $('#customerAddress').val(d.address || '');
+                });
+
+                $select.on('select2:clear', () => {
+                    $('#id_cust').val('');
+                    $('#customerPhone').val('');
+                    $('#customerAddress').val('');
+                });
+
+                console.log('Select2 initialized for Customer at', ajaxUrl);
+            }
+
             // ===== SALPER SELECT2 =====
             initSalesSelect() {
                 if (!window.jQuery) {
@@ -1320,27 +1371,30 @@
                         data: params => ({
                             q: params.term || ''
                         }),
-                        processResults: data => data,
+                        processResults: data => data, // expect { results: [{id,text}, ...] }
                         cache: true,
                     },
                     minimumInputLength: 0,
-                    width: '100%'
+                    width: '100%',
+                    multiple: true, // << make it multi
                 });
 
-                $select.on('select2:select', (e) => {
-                    const d = e.params.data || {};
-                    $('#sales_id_visit').val(d.id || '');
-                    $('#sales_name').val(d.text || '');
+                // OPTIONAL: If you still want to mirror the "first" selected salper into legacy fields:
+                $select.on('change', () => {
+                    const selected = $select.select2('data') || [];
+                    const first = selected[0] || {};
+                    $('#sales_id_visit').val(first.id || '');
+                    $('#sales_name').val(first.text || '');
                 });
 
-                $select.on('select2:clear', () => {
-                    $('#sales_id_visit').val('');
-                    $('#sales_name').val('');
+                // Auto-trigger initial search on open
+                $select.on('select2:open', () => {
+                    const $search = $('.select2-container--open .select2-search__field');
+                    if ($search.val() === '') $search.trigger('input');
                 });
 
-                console.log('Select2 initialized for Sales at', ajaxUrl);
+                console.log('Select2 initialized (multi) for Sales at', ajaxUrl);
             }
-
 
             // ===== ITEM SELECT2 HELPERS =====
             computeDiscountedPrice(price, disc) {
@@ -1568,6 +1622,43 @@
         document.getElementById('kanbanViewBtn')?.addEventListener('click', function() {
             document.getElementById('listViewBtn')?.classList.remove('active');
             this.classList.add('active');
+        });
+
+        document.getElementById('generateQuotationBtn')?.addEventListener('click', async () => {
+            const dealId = document.getElementById('deals_id')?.value;
+            if (!dealId) return alert('Deals ID belum tersedia.');
+
+            try {
+                // pastikan stage sudah QUOTATION di form
+                // const stageSel = document.getElementById('stageSelect');
+                // if (stageSel.value !== 'QUOTATION') {
+                //     return alert('Silakan pilih stage QUOTATION terlebih dahulu.');
+                // }
+
+                // simpan dulu form (agar data terbaru, termasuk items) → lalu generate
+                const form = document.getElementById('dealForm');
+                if (form) {
+                    // pakai submit XHR yang sudah ada (handleFormSubmit), tapi kita tunggu selesai secara sederhana
+                    // cara praktis: trigger submit dan setelah response ok, panggil endpoint generate
+                    // di sini, panggil endpoint generate langsung (server juga idempotent)
+                }
+
+                const res = await fetch(`/deals/${encodeURIComponent(dealId)}/generate-quotation`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]')?.content ||
+                            '')
+                    },
+                    credentials: 'same-origin'
+                });
+                const data = await res.json();
+                if (!res.ok || data?.ok === false) throw new Error(data?.message || `HTTP ${res.status}`);
+                alert(data?.message || 'Quotation berhasil digenerate');
+            } catch (e) {
+                console.error(e);
+                alert(`Gagal generate quotation: ${e.message}`);
+            }
         });
     </script>
 

@@ -143,4 +143,30 @@ class UserController extends Controller
         $user->delete();
         return redirect()->route('users.index')->with('success', 'User deleted.');
     }
+
+    public function search(Request $request)
+    {
+        $q = trim($request->get('q', ''));
+        $limit = (int) $request->get('limit', 20);
+
+        $query = User::query()
+            ->select(['id', 'username', 'email'])
+            ->when($q, function ($qr) use ($q) {
+                $qr->where(function ($w) use ($q) {
+                    $w->where('username', 'like', "%{$q}%")
+                        ->orWhere('email', 'like', "%{$q}%");
+                });
+            })
+            ->orderBy('username')
+            ->limit($limit);
+
+        $items = $query->get()->map(function ($row) {
+            return [
+                'id' => (string) $row->id,
+                'text' => $row->username . ' (' . $row->email . ')',
+            ];
+        });
+
+        return response()->json(['results' => $items]);
+    }
 }

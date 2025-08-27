@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BobotController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DataCustomerController;
 use App\Http\Controllers\DealController;
 use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\PointController;
@@ -29,10 +31,8 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/home', function () {
-        return view('dashboard');
-    })->name('home');
-
+    Route::get('/home', [DashboardController::class, 'index'])
+        ->name('home');
 
     Route::prefix('stores')->group(function () {
         Route::get('/search', [StoreController::class, 'search'])->name('stores.search');
@@ -42,9 +42,19 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/salpers/search', [SalperController::class, 'search'])->name('salpers.search');
 
+    Route::get('/customers/search', [DataCustomerController::class, 'search'])
+        ->name('customers.search');
+
+    Route::get('/users/search', [UserController::class, 'search'])->name('users.search');
+
     Route::patch('/deals/{deal}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
     Route::get('/deals/{id}', [DealController::class, 'getDeal'])->name('deals.api.show');
 
+    Route::patch('/deals/{id}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
+    Route::post('/deals/{id}/generate-quotation', [DealController::class, 'generateQuotation'])
+        ->name('deals.generateQuotation');
+
+    Route::resource('customers', DataCustomerController::class);
     Route::resource('salpers', SalperController::class);
     Route::resource('deals', DealController::class);
     Route::resource('products', ProductController::class);
