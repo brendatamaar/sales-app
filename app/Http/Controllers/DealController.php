@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use Illuminate\Support\Carbon;
+use App\Services\QuotationExporter;
 
 class DealController extends Controller
 {
@@ -393,7 +394,7 @@ class DealController extends Controller
                         'deal_size' => $updatedDeal->deal_size,
                         'stage' => $updatedDeal->stage,
                         'updated_at' => $updatedDeal->updated_at->toISOString()
-                    ]
+                    ],
                 ]);
             }
 
@@ -520,6 +521,7 @@ class DealController extends Controller
                 'grand_total' => $q->grand_total,
                 'created_date' => optional($q->created_date)->toDateString(),
                 'expired_date' => optional($q->expired_date)->toDateString(),
+                'file' => $q->file_path,
             ]
         ], 201);
     }
@@ -785,6 +787,10 @@ class DealController extends Controller
             ]);
         }
 
-        return $quotation->fresh('items');
+        $exporter = app(QuotationExporter::class);
+        $publicPath = $exporter->export($quotation); // e.g., 'storage/quotations/2025/08/MITRA10_HTXABC_20250827.xlsx'
+        $quotation->update(['file_path' => $publicPath]);
+
+        return $quotation->fresh(['items']);
     }
 }

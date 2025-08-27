@@ -414,6 +414,10 @@
 
                             <button type="button" class="btn btn-success btn-sm mt-2" id="generateQuotationBtn">Generate
                                 Quotation</button>
+
+                            <a id="btnDownloadQuotation" class="btn btn-success" target="_blank">
+                                <i class="fas fa-file-excel me-1"></i> Download Quotation
+                            </a>
                         </fieldset>
 
                         {{-- Receipt (WON) --}}
@@ -1654,6 +1658,14 @@
                 });
                 const data = await res.json();
                 if (!res.ok || data?.ok === false) throw new Error(data?.message || `HTTP ${res.status}`);
+
+                if (data?.quotation?.file) {
+                    const a = document.getElementById('btnDownloadQuotation');
+                    if (a) {
+                        a.href = `/${data.quotation.file}`;
+                        a.classList.remove('d-none');
+                    }
+                }
                 alert(data?.message || 'Quotation berhasil digenerate');
             } catch (e) {
                 console.error(e);

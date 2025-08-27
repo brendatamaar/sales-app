@@ -18,6 +18,7 @@ class Quotation extends Model
         'no_rek_store',
         'payment_term',
         'grand_total',
+        'file_path',
         'meta',
     ];
     protected $casts = [
