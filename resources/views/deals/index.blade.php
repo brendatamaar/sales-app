@@ -181,6 +181,7 @@
                         @csrf
                         <input type="hidden" name="deals_id" id="deals_id">
                         <input type="hidden" name="stage" id="stage_hidden" value="mapping">
+                        <input type="hidden" name="duplicate_of" id="duplicate_of">
 
                         {{-- Stage Selection --}}
                         <fieldset class="form-section mb-4">
@@ -193,9 +194,6 @@
                                     <option value="">Pilih Stage</option>
                                     <option value="MAPPING" selected>Mapping</option>
                                     <option value="VISIT">Visit</option>
-                                    <option value="QUOTATION">Quotation</option>
-                                    <option value="WON">Won</option>
-                                    <option value="LOST">Lost</option>
                                 </select>
                                 <div id="stageHelp" class="form-text">Pilih tahap deal saat ini</div>
                             </div>
@@ -234,7 +232,7 @@
                                     <label for="createdDate" class="form-label">Tanggal Dibuat <span
                                             class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="createdDate" name="created_date"
-                                        required>
+                                        disabled required>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="endDate" class="form-label">Tanggal Berakhir</label>
@@ -446,6 +444,23 @@
                                 <label for="failureReason" class="form-label">Alasan Gagal</label>
                                 <textarea class="form-control" id="failureReason" name="lost_reason" rows="3"
                                     placeholder="Jelaskan mengapa deal ini gagal..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="stageSelect" class="form-label">Stage <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="failureReason" name="lost_reason" required
+                                    aria-describedby="failureHelp">
+                                    <option value="">Pilih Alasan</option>
+                                    <option value="Bad Timing" selected>Bad Timing</option>
+                                    <option value="Tidak ada response">Tidak ada response</option>
+                                    <option value="Tidak tertarik">Tidak tertarik</option>
+                                    <option value="Memilih kompetitor">Memilih kompetitor</option>
+                                    <option value="Harga khusus tidak diapproval">Harga khusus tidak diapproval</option>
+                                    <option value="Permasalahan internal">Permasalahan internal</option>
+                                    <option value="Produk yg dicari tidak ada">Produk yg dicari tidak ada</option>
+                                </select>
+                                <div id="failureHelp" class="form-text">Pilih alasan mengapa deal ini gagal</div>
                             </div>
                         </fieldset>
                     </form>
@@ -709,7 +724,7 @@
                         dragClass: 'sortable-drag',
                         onStart: () => this.handleDragStart(),
                         onEnd: () => this.handleDragEnd(),
-                        onAdd: (evt) => this.handleCardMove(evt),
+                        onAdd: (evt) => this.onDropDuplicate(evt),
                     });
                 });
             }
@@ -751,6 +766,7 @@
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const result = await response.json();
                     if (!result.ok) throw new Error(result.message || 'Failed to fetch deal data');
+
                     this.openAddModalUpdate({
                         card,
                         fromBody,
@@ -772,6 +788,63 @@
                 }
             }
 
+            async onDropDuplicate(evt) {
+                const card = evt.item;
+                const fromBody = evt.from;
+                const toBody = evt.to;
+
+                const fromColumn = fromBody.closest('.kanban-col');
+                const toColumn = toBody.closest('.kanban-col');
+
+                const fromStage = card.dataset.stage || (fromColumn ? fromColumn.dataset.stage : null);
+                const toStage = toColumn ? toColumn.dataset.stage : null;
+
+                // Validate forward-only progression
+                if (!this.isValidStageTransition(fromStage, toStage)) {
+                    this.revertCardMove(card, fromBody, evt.oldIndex);
+                    this.showError('Perpindahan stage tidak valid. Deal hanya bisa maju ke stage berikutnya.');
+                    return;
+                }
+
+                // 🔸 Immediately revert the drag (so the old card stays in place visually)
+                this.revertCardMove(card, fromBody, evt.oldIndex);
+
+                // Fetch the source deal’s latest data and open modal in "duplicate" mode
+                this.showLoading(true);
+                try {
+                    const response = await fetch(`/deals/${encodeURIComponent(card.dataset.id)}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': this.csrfToken
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const result = await response.json();
+                    if (!result.ok) throw new Error(result.message || 'Failed to fetch deal data');
+                    // open duplicate modal targeted to the next stage
+                    this.openAddModalUpdate({
+                        card,
+                        fromBody,
+                        toBody,
+                        fromColumn,
+                        toColumn,
+                        fromStage,
+                        toStage,
+                        oldIndex: evt.oldIndex,
+                        dealData: result.deal
+                    });
+                } catch (err) {
+                    console.error('Error fetching deal data:', err);
+                    this.showError('Gagal mengambil data deal dari database');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+
             isValidStageTransition(fromStage, toStage) {
                 const fromIndex = this.STAGES.indexOf(fromStage);
                 const toIndex = this.STAGES.indexOf(toStage);
@@ -784,30 +857,41 @@
 
             // ===== UPDATE VIA ADD MODAL =====
             openAddModalUpdate(ctx) {
-                this.mode = 'update';
+                this.mode = 'duplicate';
                 this.pendingUpdate = ctx;
                 this.hasSubmitted = false;
 
-                const dealData = ctx.dealData;
-                dealData.stage = ctx.toStage;
+                const original = ctx.dealData;
+                const targetStage = ctx.toStage;
+
+                const cloned = {
+                    ...original,
+                    deals_id: this.createRandomId(),
+                    stage: targetStage,
+                    created_date: new Date().toISOString().split('T')[0],
+                    closed_date: '',
+                    receipt_number: '',
+                    lost_reason: ''
+                };
 
                 this.resetForm();
-                this.fillFormFromDealData(dealData);
-                this.handleStageChange(dealData.stage.toUpperCase());
+                this.fillFormFromDealData(cloned);
+                this.handleStageChange(targetStage)
+
+                const dupOf = document.getElementById('duplicate_of');
+                if (dupOf) dupOf.value = original.deals_id || '';
+
+                const stageHidden = document.getElementById('stage_hidden');
+                if (stageHidden) stageHidden.value = targetStage;
+
+                const stageSelect = document.getElementById('stageSelect');
+                if (stageSelect) stageSelect.value = targetStage.toUpperCase();
 
                 const form = document.getElementById('dealForm');
                 if (form) {
-                    form.action = `/deals/${encodeURIComponent(dealData.deals_id)}`;
-                    let methodInput = form.querySelector('input[name="_method"]');
-                    if (!methodInput) {
-                        methodInput = document.createElement('input');
-                        methodInput.type = 'hidden';
-                        methodInput.name = '_method';
-                        methodInput.value = 'PATCH';
-                        form.appendChild(methodInput);
-                    } else {
-                        methodInput.value = 'PATCH';
-                    }
+                    form.action = "{{ route('deals.store') }}";
+                    const methodInput = form.querySelector('input[name=\"_method\"]');
+                    if (methodInput) methodInput.remove();
                 }
 
                 new bootstrap.Modal(document.getElementById('dealModal')).show();
@@ -862,12 +946,45 @@
                 const notes = document.getElementById('notes');
                 if (notes) notes.value = dealData.notes || '';
 
-                // Customer info
-                const custName = document.getElementById('customerName');
-                if (custName) custName.value = dealData.cust_name || '';
+                // ---- Customer info (Select2 + hidden + inputs)
+                (() => {
+                    const id = dealData.id_cust ??
+                        (dealData.customer && (dealData.customer.id ?? dealData.customer.id_cust)) ??
+                        '';
+                    const name = dealData.cust_name ??
+                        (dealData.customer && (dealData.customer.name ?? dealData.customer.cust_name)) ??
+                        '';
+                    const phone = dealData.no_telp_cust ??
+                        (dealData.customer && (dealData.customer.phone ?? dealData.customer.no_telp)) ??
+                        '';
+                    const address = dealData.alamat_lengkap ??
+                        (dealData.customer && (dealData.customer.address ?? dealData.customer.alamat)) ??
+                        '';
 
-                const custPhone = document.getElementById('customerPhone');
-                if (custPhone) custPhone.value = dealData.no_telp_cust || '';
+                    // Hidden & text fields
+                    const idCustEl = document.getElementById('id_cust');
+                    if (idCustEl) idCustEl.value = id || '';
+                    const custPhoneEl = document.getElementById('customerPhone');
+                    if (custPhoneEl) custPhoneEl.value = phone || '';
+                    const custAddrEl = document.getElementById('customerAddress');
+                    if (custAddrEl) custAddrEl.value = address || '';
+
+                    // Select2 (#customerSelect)
+                    if (window.jQuery) {
+                        const $ = window.jQuery;
+                        const $cust = $('#customerSelect');
+                        if ($cust.length) {
+                            // Clear existing selection
+                            $cust.val(null).trigger('change');
+
+                            // If we have id+name, inject as an option and select it
+                            if (id && name) {
+                                const opt = new Option(String(name), String(id), true, true);
+                                $cust.append(opt).trigger('change');
+                            }
+                        }
+                    }
+                })();
 
                 // Payment info
                 const paymentTerms = document.getElementById('paymentTerms');
@@ -995,6 +1112,8 @@
 
                     if (this.mode === 'create') {
                         this.handleSuccessfulSubmission(result);
+                    } else if (this.mode === 'duplicate') {
+                        this.handleSuccessfulDuplicate(result);
                     } else {
                         this.handleSuccessfulUpdate();
                     }
@@ -1051,6 +1170,23 @@
                 this.updateTotalCount(1);
                 this.showSuccess('Deal berhasil disimpan');
             }
+
+            handleSuccessfulDuplicate(result) {
+                this.addCardToKanban(result.deal, result.redirect);
+                this.updateTotalCount(1);
+
+                if (this.pendingUpdate?.toColumn) {
+                    this.updateStageCount(this.pendingUpdate.toColumn, +1);
+                }
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('dealModal'));
+                if (modal) modal.hide();
+
+                this.pendingUpdate = null;
+                this.mode = 'create';
+                this.showSuccess('Deal baru dibuat di stage berikutnya (duplicate).');
+            }
+
 
             handleSuccessfulUpdate() {
                 const {
@@ -1638,14 +1774,6 @@
                 // if (stageSel.value !== 'QUOTATION') {
                 //     return alert('Silakan pilih stage QUOTATION terlebih dahulu.');
                 // }
-
-                // simpan dulu form (agar data terbaru, termasuk items) → lalu generate
-                const form = document.getElementById('dealForm');
-                if (form) {
-                    // pakai submit XHR yang sudah ada (handleFormSubmit), tapi kita tunggu selesai secara sederhana
-                    // cara praktis: trigger submit dan setelah response ok, panggil endpoint generate
-                    // di sini, panggil endpoint generate langsung (server juga idempotent)
-                }
 
                 const res = await fetch(`/deals/${encodeURIComponent(dealId)}/generate-quotation`, {
                     method: 'POST',

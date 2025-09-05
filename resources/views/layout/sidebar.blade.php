@@ -90,5 +90,11 @@
                 <span class="menu-title">Users</span>
             </a>
         </li>
+        <li class="nav-item {{ Route::is('roles.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('roles.index') }}">
+                <i class="menu-icon mdi mdi-lock-outline"></i>
+                <span class="menu-title">Roles</span>
+            </a>
+        </li>
     </ul>
 </nav>

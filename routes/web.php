@@ -10,6 +10,7 @@ use App\Http\Controllers\PointController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SalperController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UserController;
@@ -82,5 +83,6 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('users', UserController::class);
     Route::resource('bobot', BobotController::class);
     Route::resource('point', PointController::class);
+    Route::resource('roles', RoleController::class);
 
 });

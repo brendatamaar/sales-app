@@ -65,23 +65,18 @@ class RolePermissionSeeder extends Seeder
             'edit-bobots',
             'delete-bobots',
 
-            // Reports
-            'view-reports',
-            'view-regional-reports',
-            'view-national-reports',
-            'export-reports',
-
-            // System Settings
-            'manage-settings',
-            'manage-permissions',
-            'view-audit-logs',
+            // Role Settings
+            'view-roles',
+            'create-roles',
+            'edit-roles',
+            'delete-roles',
         ];
 
         foreach ($permissions as $permission) {
             Permission::create(['name' => $permission]);
         }
 
-        // 1. STAFF - Basic operations in their store
+        // 1. STAFF
         $staffRole = Role::create(['name' => 'staff']);
         $staffRole->givePermissionTo([
             'view-deals',
@@ -94,7 +89,7 @@ class RolePermissionSeeder extends Seeder
             'view-points',
         ]);
 
-        // 2. LEADERS - Staff permissions + manage staff in their store
+        // 2. LEADERS
         $leadersRole = Role::create(['name' => 'leaders']);
         $leadersRole->givePermissionTo([
             'view-deals',
@@ -115,10 +110,9 @@ class RolePermissionSeeder extends Seeder
             'view-salpers',
             'create-salpers',
             'edit-salpers',
-            'view-reports',
         ]);
 
-        // 3. MANAGER - Leaders permissions + manage store operations
+        // 3. MANAGER
         $managerRole = Role::create(['name' => 'manager']);
         $managerRole->givePermissionTo([
             'view-deals',
@@ -150,11 +144,9 @@ class RolePermissionSeeder extends Seeder
             'edit-users',
             'view-stores',
             'edit-stores',
-            'view-reports',
-            'export-reports',
         ]);
 
-        // 4. REGIONAL MANAGER - Manager permissions + regional oversight
+        // 4. REGIONAL MANAGER
         $regionalManagerRole = Role::create(['name' => 'regional manager']);
         $regionalManagerRole->givePermissionTo([
             'view-deals',
@@ -190,12 +182,9 @@ class RolePermissionSeeder extends Seeder
             'create-stores',
             'edit-stores',
             'delete-stores',
-            'view-reports',
-            'view-regional-reports',
-            'export-reports',
         ]);
 
-        // 5. SUPER ADMIN - Full system access
+        // 5. SUPER ADMIN
         $superAdminRole = Role::create(['name' => 'super admin']);
         $superAdminRole->givePermissionTo(Permission::all());
 
@@ -214,32 +203,21 @@ class RolePermissionSeeder extends Seeder
                 // Handle possible variations in naming
                 switch ($roleName) {
                     case 'staff':
-                    case 'employee':
                         $user->assignRole('staff');
                         break;
-                    case 'leader':
                     case 'leaders':
-                    case 'team leader':
                         $user->assignRole('leaders');
                         break;
                     case 'manager':
-                    case 'store manager':
                         $user->assignRole('manager');
                         break;
                     case 'regional manager':
-                    case 'regional':
-                    case 'rm':
                         $user->assignRole('regional manager');
                         break;
                     case 'super admin':
-                    case 'superadmin':
-                    case 'admin':
-                    case 'administrator':
                         $user->assignRole('super admin');
                         break;
                     default:
-                        // Default to staff if role doesn't match
-                        $user->assignRole('staff');
                         break;
                 }
             }

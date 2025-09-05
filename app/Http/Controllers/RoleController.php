@@ -3,178 +3,115 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permission:manage-permissions');
-    }
-
     /**
-     * Display role hierarchy and permissions
+     * Display a listing of roles.
      */
     public function index()
     {
-        $roles = Role::with('permissions')->get();
-        $roleHierarchy = $this->getRoleHierarchy();
+        $roles = Role::with('permissions')->orderBy('name')->get();
 
-        return view('roles.index', compact('roles', 'roleHierarchy'));
+        return view('roles.index', compact('roles'));
     }
 
     /**
-     * Assign role to user
+     * Show the form for creating a new role.
      */
-    public function assignRole(Request $request)
+    public function create()
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'role' => 'required|exists:roles,name'
+        $permissions = Permission::orderBy('name')->get();
+
+        return view('roles.create', compact('permissions'));
+    }
+
+    /**
+     * Store a newly created role in storage.
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255|unique:roles,name',
+            'guard_name' => 'nullable|string|max:255',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'integer|exists:permissions,id',
         ]);
 
-        $user = User::findOrFail($request->user_id);
+        DB::transaction(function () use ($data) {
+            $role = Role::create([
+                'name' => $data['name'],
+                'guard_name' => $data['guard_name'] ?? 'web',
+            ]);
 
-        // Check if current user can assign this role
-        if (!$this->canAssignRole($request->role)) {
-            return back()->with('error', 'You do not have permission to assign this role.');
-        }
+            if (!empty($data['permissions'])) {
+                $role->syncPermissions($data['permissions']);
+            }
+        });
 
-        // Remove all existing roles and assign new one
-        $user->syncRoles([$request->role]);
-
-        // Update the role field in users table for consistency
-        $user->update(['role' => $request->role]);
-
-        return back()->with('success', 'Role assigned successfully.');
+        return redirect()->route('roles.index')->with('success', 'Role created successfully.');
     }
 
     /**
-     * Get users by role
+     * Display the specified role.
      */
-    public function getUsersByRole($role)
+    public function show($id)
     {
-        $users = User::role($role)->with('store')->get();
-        return response()->json($users);
+        $role = Role::with('permissions')->findOrFail($id);
+
+        return view('roles.show', compact('role'));
     }
 
     /**
-     * Check role hierarchy and permissions
+     * Show the form for editing the specified role.
      */
-    public function checkPermissions(User $user)
+    public function edit($id)
     {
-        return [
-            'roles' => $user->getRoleNames(),
-            'permissions' => $user->getAllPermissions()->pluck('name'),
-            'can_manage_users' => $user->can('create-users'),
-            'can_view_reports' => $user->can('view-reports'),
-        ];
+        $role = Role::with('permissions')->findOrFail($id);
+        $permissions = Permission::orderBy('name')->get();
+
+        return view('roles.edit', compact('role', 'permissions'));
     }
 
     /**
-     * Get role hierarchy for display
+     * Update the specified role in storage.
      */
-    private function getRoleHierarchy()
+    public function update(Request $request, $id)
     {
-        return [
-            'super admin' => [
-                'level' => 5,
-                'description' => 'Full system access and administration',
-                'manages' => ['All users and system settings']
-            ],
-            'regional manager' => [
-                'level' => 4,
-                'description' => 'Manages multiple stores in a region',
-                'manages' => ['All stores in region, managers, leaders, staff']
-            ],
-            'manager' => [
-                'level' => 3,
-                'description' => 'Manages store operations and staff',
-                'manages' => ['Store operations, leaders, staff']
-            ],
-            'leaders' => [
-                'level' => 2,
-                'description' => 'Team leader with supervisory responsibilities',
-                'manages' => ['Staff members, daily operations']
-            ],
-            'staff' => [
-                'level' => 1,
-                'description' => 'Basic operational role',
-                'manages' => ['Own tasks and customer interactions']
-            ]
-        ];
+        $role = Role::findOrFail($id);
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
+            'guard_name' => 'nullable|string|max:255',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'integer|exists:permissions,id',
+        ]);
+
+        DB::transaction(function () use ($data, $role) {
+            $role->update([
+                'name' => $data['name'],
+                'guard_name' => $data['guard_name'] ?? $role->guard_name,
+            ]);
+
+            if (array_key_exists('permissions', $data)) {
+                $role->syncPermissions($data['permissions'] ?? []);
+            }
+        });
+
+        return redirect()->route('roles.index')->with('success', 'Role updated successfully.');
     }
 
     /**
-     * Check if current user can assign specific role
+     * Remove the specified role from storage.
      */
-    private function canAssignRole($targetRole)
+    public function destroy($id)
     {
-        $user = auth()->user();
+        $role = Role::findOrFail($id);
+        $role->delete();
 
-        // Super admin can assign any role
-        if ($user->hasRole('super admin')) {
-            return true;
-        }
-
-        // Regional manager can assign manager, leaders, staff
-        if ($user->hasRole('regional manager')) {
-            return in_array($targetRole, ['manager', 'leaders', 'staff']);
-        }
-
-        // Manager can assign leaders, staff
-        if ($user->hasRole('manager')) {
-            return in_array($targetRole, ['leaders', 'staff']);
-        }
-
-        // Leaders can assign staff
-        if ($user->hasRole('leaders')) {
-            return $targetRole === 'staff';
-        }
-
-        return false;
-    }
-
-    /**
-     * Get available roles for current user to assign
-     */
-    public function getAssignableRoles()
-    {
-        $user = auth()->user();
-        $allRoles = ['staff', 'leaders', 'manager', 'regional manager', 'super admin'];
-
-        if ($user->hasRole('super admin')) {
-            return $allRoles;
-        } elseif ($user->hasRole('regional manager')) {
-            return ['staff', 'leaders', 'manager'];
-        } elseif ($user->hasRole('manager')) {
-            return ['staff', 'leaders'];
-        } elseif ($user->hasRole('leaders')) {
-            return ['staff'];
-        }
-
-        return [];
-    }
-
-    /**
-     * Middleware helper - check if user can manage users at specific level
-     */
-    public static function canManageUsersInStore($storeId)
-    {
-        $user = auth()->user();
-
-        // Super admin and regional manager can manage any store
-        if ($user->hasAnyRole(['super admin', 'regional manager'])) {
-            return true;
-        }
-
-        // Manager and leaders can only manage users in their own store
-        if ($user->hasAnyRole(['manager', 'leaders'])) {
-            return $user->store_id == $storeId;
-        }
-
-        return false;
+        return redirect()->route('roles.index')->with('success', 'Role deleted successfully.');
     }
 }

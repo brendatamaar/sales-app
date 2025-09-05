@@ -11,19 +11,6 @@ class UserRoleSeeder extends Seeder
 {
     public function run(): void
     {
-        // Define roles
-        $roles = [
-            'staff',
-            'leaders',
-            'manager',
-            'regional manager',
-            'super admin',
-        ];
-
-        foreach ($roles as $roleName) {
-            Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
-        }
-
         // Seed example users for each role
         $users = [
             [
