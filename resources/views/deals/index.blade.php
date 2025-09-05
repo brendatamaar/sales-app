@@ -92,15 +92,26 @@
                         <article class="kanban-card card mb-2 shadow-sm" data-id="{{ e($deal->deals_id) }}"
                             data-stage="{{ e($stageKey) }}">
                             <div class="card-body p-2">
-                                <h3 class="fw-semibold h6 mb-1">{{ $deal->deal_name }}</h3>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h3 class="fw-semibold h6 mb-1">{{ $deal->deal_name }}</h3>
+
+                                    @can('delete-deals')
+                                        <form action="{{ route('deals.destroy', $deal) }}" method="POST"
+                                            onsubmit="return confirm('Hapus deal ini?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endcan
+                                </div>
                                 <div class="small text-muted mb-1">
                                     {{ $deal->deal_size ? 'Rp ' . number_format($deal->deal_size, 0, ',', '.') : 'Rp 0' }}
                                 </div>
                                 <div class="small text-muted">
                                     Created at: {{ $deal->created_at ? $deal->created_at->format('d/m/Y') : '-' }}
                                 </div>
-                                <a href="{{ route('deals.show', $deal->deals_id) }}" class="stretched-link"
-                                    aria-label="View deal {{ $deal->deal_name }}"></a>
                             </div>
                         </article>
                     @empty
@@ -155,6 +166,17 @@
                                         class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye"></i>
                                     </a>
+
+                                    @can('delete-deals')
+                                        <form action="{{ route('deals.destroy', $deal) }}" method="POST" class="d-inline"
+                                            onsubmit="return confirm('Hapus deal ini?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endcan
                                 </td>
                             </tr>
                         @endforeach
@@ -846,6 +868,10 @@
 
 
             isValidStageTransition(fromStage, toStage) {
+                if (fromStage == "won") {
+                    return true
+                }
+
                 const fromIndex = this.STAGES.indexOf(fromStage);
                 const toIndex = this.STAGES.indexOf(toStage);
                 return toIndex === fromIndex + 1;

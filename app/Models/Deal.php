@@ -49,6 +49,11 @@ class Deal extends Model
         'receipt_upload' => 'array',
     ];
 
+    public function getRouteKeyName()
+    {
+        return 'deals_id';
+    }
+
     // Relationships
     public function store()
     {

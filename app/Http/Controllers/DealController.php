@@ -626,34 +626,15 @@ class DealController extends Controller
         }
     }
 
-    public function destroy(string $id)
+    public function destroy(Deal $deal)
     {
         try {
-            $deal = Deal::findOrFail($id);
-
-            DB::transaction(function () use ($deal) {
-                $deal->dealItems()->delete();
-
-                // delete files from three columns
-                foreach (['photo_upload', 'quotation_upload', 'receipt_upload'] as $col) {
-                    $files = $deal->{$col} ?? [];
-                    foreach ($files as $path) {
-                        if (Storage::disk('public')->exists($path)) {
-                            Storage::disk('public')->delete($path);
-                        }
-                    }
-                }
-
-                $deal->delete();
-                $this->clearKanbanCache();
-                Log::info('Deal deleted', ['deals_id' => $deal->deals_id]);
-            });
-
-            return redirect()->route('deals.index')->with('success', 'Deal berhasil dihapus');
-
-        } catch (Exception $e) {
-            Log::error('Deal deletion failed', ['deals_id' => $id, 'error' => $e->getMessage()]);
-            return back()->withErrors(['error' => 'Gagal menghapus deal: ' . $e->getMessage()]);
+            $deal->delete();
+            return redirect()
+                ->route('deals.index')
+                ->with('success', 'Deal deleted successfully.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to delete deal: ' . $e->getMessage());
         }
     }
 
