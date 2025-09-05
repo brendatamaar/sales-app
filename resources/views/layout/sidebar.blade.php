@@ -84,6 +84,12 @@
                 <span class="menu-title">Stores</span>
             </a>
         </li>
+        <li class="nav-item {{ Route::is('salpers.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('salpers.index') }}">
+                <i class="menu-icon mdi mdi-home-city"></i>
+                <span class="menu-title">Salpers</span>
+            </a>
+        </li>
         <li class="nav-item {{ Route::is('users.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('users.index') }}">
                 <i class="menu-icon mdi mdi-account-circle"></i>

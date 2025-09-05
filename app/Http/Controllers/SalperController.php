@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Salper;
+use App\Models\Store;
 use Illuminate\Http\Request;
 
 class SalperController extends Controller
@@ -14,7 +15,25 @@ class SalperController extends Controller
     {
         // List all salpers with related store
         $salpers = Salper::with('store')->paginate(10);
-        return response()->json($salpers);
+        return view('salpers.index', compact('salpers'));
+    }
+
+    public function create()
+    {
+        $stores = Store::all();
+        return view('salpers.create', compact('stores'));
+    }
+
+    public function edit(Salper $salper)
+    {
+        $stores = Store::all();
+        return view('salpers.edit', compact('salper', 'stores'));
+    }
+
+    public function show(Salper $salper)
+    {
+        $salper->load(['store', 'dealsMapping']);
+        return view('salpers.show', compact('salper'));
     }
 
     /**
@@ -30,15 +49,6 @@ class SalperController extends Controller
         $salper = Salper::create($validated);
 
         return response()->json($salper, 201);
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Salper $salper)
-    {
-        $salper->load(['store', 'dealsMapping', 'pointsAsMapping', 'pointsAsVisit', 'pointsAsQuotation', 'pointsAsWon']);
-        return response()->json($salper);
     }
 
     /**
