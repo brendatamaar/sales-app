@@ -209,10 +209,9 @@
                         @csrf
                         <input type="hidden" name="deals_id" id="deals_id">
                         <input type="hidden" name="stage" id="stage_hidden" value="mapping">
-                        <input type="hidden" name="duplicate_of" id="duplicate_of">
 
                         {{-- Stage Selection --}}
-                        <fieldset class="form-section mb-4" data-stages="mapping,visit">
+                        <fieldset class="form-section mb-4">
                             <legend class="h6"><i class="fas fa-layer-group me-2" aria-hidden="true"></i> Pilih Stage
                             </legend>
                             <div class="form-group">
@@ -222,6 +221,9 @@
                                     <option value="">Pilih Stage</option>
                                     <option value="MAPPING" selected>Mapping</option>
                                     <option value="VISIT">Visit</option>
+                                    <option value="QUOTATION">Quotation</option>
+                                    <option value="WON">Won</option>
+                                    <option value="LOST">Lost</option>
                                 </select>
                                 <div id="stageHelp" class="form-text">Pilih tahap deal saat ini</div>
                             </div>
@@ -260,7 +262,7 @@
                                     <label for="createdDate" class="form-label">Tanggal Dibuat <span
                                             class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="createdDate" name="created_date"
-                                        disabled required>
+                                        required>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="endDate" class="form-label">Tanggal Berakhir</label>
@@ -746,7 +748,7 @@
                         dragClass: 'sortable-drag',
                         onStart: () => this.handleDragStart(),
                         onEnd: () => this.handleDragEnd(),
-                        onAdd: (evt) => this.onDropDuplicate(evt),
+                        onAdd: (evt) => this.handleCardMove(evt),
                     });
                 });
             }
@@ -810,68 +812,7 @@
                 }
             }
 
-            async onDropDuplicate(evt) {
-                const card = evt.item;
-                const fromBody = evt.from;
-                const toBody = evt.to;
-
-                const fromColumn = fromBody.closest('.kanban-col');
-                const toColumn = toBody.closest('.kanban-col');
-
-                const fromStage = card.dataset.stage || (fromColumn ? fromColumn.dataset.stage : null);
-                const toStage = toColumn ? toColumn.dataset.stage : null;
-
-                // Validate forward-only progression
-                if (!this.isValidStageTransition(fromStage, toStage)) {
-                    this.revertCardMove(card, fromBody, evt.oldIndex);
-                    this.showError('Perpindahan stage tidak valid. Deal hanya bisa maju ke stage berikutnya.');
-                    return;
-                }
-
-                // 🔸 Immediately revert the drag (so the old card stays in place visually)
-                this.revertCardMove(card, fromBody, evt.oldIndex);
-
-                // Fetch the source deal’s latest data and open modal in "duplicate" mode
-                this.showLoading(true);
-                try {
-                    const response = await fetch(`/deals/${encodeURIComponent(card.dataset.id)}`, {
-                        method: 'GET',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': this.csrfToken
-                        },
-                        credentials: 'same-origin'
-                    });
-
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const result = await response.json();
-                    if (!result.ok) throw new Error(result.message || 'Failed to fetch deal data');
-                    // open duplicate modal targeted to the next stage
-                    this.openAddModalUpdate({
-                        card,
-                        fromBody,
-                        toBody,
-                        fromColumn,
-                        toColumn,
-                        fromStage,
-                        toStage,
-                        oldIndex: evt.oldIndex,
-                        dealData: result.deal
-                    });
-                } catch (err) {
-                    console.error('Error fetching deal data:', err);
-                    this.showError('Gagal mengambil data deal dari database');
-                } finally {
-                    this.showLoading(false);
-                }
-            }
-
-
             isValidStageTransition(fromStage, toStage) {
-                if (fromStage == "won" || toStage == "lost") {
-                    return true
-                }
-
                 const fromIndex = this.STAGES.indexOf(fromStage);
                 const toIndex = this.STAGES.indexOf(toStage);
                 return toIndex === fromIndex + 1;
@@ -883,41 +824,30 @@
 
             // ===== UPDATE VIA ADD MODAL =====
             openAddModalUpdate(ctx) {
-                this.mode = 'duplicate';
+                this.mode = 'update';
                 this.pendingUpdate = ctx;
                 this.hasSubmitted = false;
 
-                const original = ctx.dealData;
-                const targetStage = ctx.toStage;
-
-                const cloned = {
-                    ...original,
-                    deals_id: this.createRandomId(),
-                    stage: targetStage,
-                    created_date: new Date().toISOString().split('T')[0],
-                    closed_date: '',
-                    receipt_number: '',
-                    lost_reason: ''
-                };
+                const dealData = ctx.dealData;
+                dealData.stage = ctx.toStage;
 
                 this.resetForm();
-                this.fillFormFromDealData(cloned);
-                this.handleStageChange(targetStage)
-
-                const dupOf = document.getElementById('duplicate_of');
-                if (dupOf) dupOf.value = original.deals_id || '';
-
-                const stageHidden = document.getElementById('stage_hidden');
-                if (stageHidden) stageHidden.value = targetStage;
-
-                const stageSelect = document.getElementById('stageSelect');
-                if (stageSelect) stageSelect.value = targetStage.toUpperCase();
+                this.fillFormFromDealData(dealData);
+                this.handleStageChange(dealData.stage.toUpperCase());
 
                 const form = document.getElementById('dealForm');
                 if (form) {
-                    form.action = "{{ route('deals.store') }}";
-                    const methodInput = form.querySelector('input[name=\"_method\"]');
-                    if (methodInput) methodInput.remove();
+                    form.action = `/deals/${encodeURIComponent(dealData.deals_id)}`;
+                    let methodInput = form.querySelector('input[name="_method"]');
+                    if (!methodInput) {
+                        methodInput = document.createElement('input');
+                        methodInput.type = 'hidden';
+                        methodInput.name = '_method';
+                        methodInput.value = 'PATCH';
+                        form.appendChild(methodInput);
+                    } else {
+                        methodInput.value = 'PATCH';
+                    }
                 }
 
                 new bootstrap.Modal(document.getElementById('dealModal')).show();
@@ -1104,10 +1034,10 @@
                 e.preventDefault();
                 const form = e.target;
 
-                // if (!form.checkValidity()) {
-                //     form.classList.add('was-validated');
-                //     return;
-                // }
+                if (!form.checkValidity()) {
+                    form.classList.add('was-validated');
+                    return;
+                }
 
                 const storeId = document.getElementById('store_id').value;
                 if (!storeId) {
@@ -1138,8 +1068,6 @@
 
                     if (this.mode === 'create') {
                         this.handleSuccessfulSubmission(result);
-                    } else if (this.mode === 'duplicate') {
-                        this.handleSuccessfulDuplicate(result);
                     } else {
                         this.handleSuccessfulUpdate();
                     }
@@ -1196,23 +1124,6 @@
                 this.updateTotalCount(1);
                 this.showSuccess('Deal berhasil disimpan');
             }
-
-            handleSuccessfulDuplicate(result) {
-                this.addCardToKanban(result.deal, result.redirect);
-                this.updateTotalCount(1);
-
-                if (this.pendingUpdate?.toColumn) {
-                    this.updateStageCount(this.pendingUpdate.toColumn, +1);
-                }
-
-                const modal = bootstrap.Modal.getInstance(document.getElementById('dealModal'));
-                if (modal) modal.hide();
-
-                this.pendingUpdate = null;
-                this.mode = 'create';
-                this.showSuccess('Deal baru dibuat di stage berikutnya (duplicate).');
-            }
-
 
             handleSuccessfulUpdate() {
                 const {

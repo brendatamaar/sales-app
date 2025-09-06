@@ -126,46 +126,6 @@ class DealController extends Controller
         try {
             $validatedData = $this->validateStoreRequest($request);
 
-            // --- NEW: if duplicate_of is provided, clone from the source ---
-            if (!empty($validatedData['duplicate_of'])) {
-                $source = Deal::with(['dealItems'])->findOrFail($validatedData['duplicate_of']);
-
-                // Ensure new deals_id and proper stage defaults
-                $newId = $validatedData['deals_id'] ?? $this->generateUniqueDealsId();
-                $newStage = strtolower($validatedData['stage'] ?? $source->stage ?? 'mapping');
-
-                $override = array_merge($validatedData, [
-                    'deals_id' => $newId,
-                    'stage' => $newStage,
-                    'created_date' => $validatedData['created_date'] ?? now()->toDateString(),
-                    'closed_date' => null,
-                    // reset close-specific fields for a fresh record:
-                    'lost_reason' => $validatedData['lost_reason'] ?? null,
-                    'receipt_number' => $validatedData['receipt_number'] ?? null,
-                ]);
-
-                $deal = $this->duplicateDeal($source, $override, $request);
-
-                if ($request->ajax()) {
-                    return response()->json([
-                        'ok' => true,
-                        'message' => 'Deal berhasil diduplikasi',
-                        'deal' => [
-                            'deals_id' => $deal->deals_id,
-                            'deal_name' => $deal->deal_name,
-                            'deal_size' => $deal->deal_size,
-                            'stage' => $deal->stage,
-                            'created_at' => $deal->created_at->toISOString(),
-                        ],
-                        'redirect' => route('deals.show', $deal->deals_id),
-                    ], 201);
-                }
-
-                return redirect()->route('deals.show', $deal->deals_id)
-                    ->with('success', 'Deal berhasil diduplikasi');
-            }
-            // --- END NEW ---
-
             if (empty($validatedData['deals_id'])) {
                 $validatedData['deals_id'] = $this->generateUniqueDealsId();
             }
@@ -177,6 +137,7 @@ class DealController extends Controller
 
             $deal = DB::transaction(function () use ($validatedData, $request) {
                 $deal = Deal::create($validatedData);
+
                 $this->handleDealItems($request, $deal->deals_id);
 
                 if (empty($deal->deal_size)) {
@@ -184,6 +145,7 @@ class DealController extends Controller
                     $deal->save();
                 }
 
+                // ✅ Award points for initial stage
                 $salperIds = $this->getSalperIdsForStage($request, $deal->stage);
                 if (!empty($salperIds)) {
                     $this->awardStagePoints($deal->deals_id, $deal->stage, $salperIds);
@@ -210,7 +172,7 @@ class DealController extends Controller
                 ], 201);
             }
 
-            return redirect()->route('deals.index', $deal->deals_id)
+            return redirect()->route('deals.show', $deal->deals_id)
                 ->with('success', 'Deal berhasil dibuat');
 
         } catch (Exception $e) {
@@ -268,127 +230,6 @@ class DealController extends Controller
         }
     }
 
-    /**
-     * Duplicate a deal to a new record (new deals_id), optionally overriding fields
-     * and optionally replacing items from the request.
-     *
-     * @param  Deal     $source    The original deal to clone
-     * @param  array    $override  Key/values to override on the cloned deal
-     * @param  Request  $request   To optionally read items/salpers/files
-     * @return Deal                The newly created cloned deal (fresh)
-     */
-    private function duplicateDeal(Deal $source, array $override, Request $request): Deal
-    {
-        return DB::transaction(function () use ($source, $override, $request) {
-            // 1) Base clone (keep arrays like photo_upload/quotation_upload/receipt_upload unless overridden)
-            $clone = $source->replicate([
-                'deals_id',
-                'stage',
-                'closed_date',
-                'lost_reason',
-                'receipt_number',
-                'created_at',
-                'updated_at',
-            ]);
-
-            // 2) Handle incoming file uploads (if any) to override arrays
-            $fileOverrides = $this->handleFileUploads($request, []);
-
-            // 3) Apply overrides (stage, dates, ids, names, etc.) — but ONLY fill real columns
-            $fillable = method_exists($clone, 'getFillable') ? $clone->getFillable() : [];
-            $fillableKeys = array_flip($fillable);
-
-            $forbidden = [
-                'items',
-                'salper_ids',
-                'sales_id_visit',
-                'sales_id_quotation',
-                'sales_id_won',
-                'salper_id_mapping',
-                'photo_upload.*',
-                'quotation_upload.*',
-                'receipt_upload.*',
-                '_token',
-                '_method',
-                'duplicate_of',
-            ];
-
-            $payload = array_merge($fileOverrides, $override);
-
-            foreach ($forbidden as $key) {
-                unset($payload[$key]);
-            }
-
-            $payload = $fillable ? array_intersect_key($payload, $fillableKeys) : $payload;
-
-            if (array_key_exists('deals_id', $payload)) {
-                $clone->deals_id = $payload['deals_id'];
-                unset($payload['deals_id']);
-            }
-
-            unset($payload['created_at'], $payload['updated_at']);
-            $clone->fill($payload);
-
-            // 4) Ensure new deals_id exists
-            if (empty($clone->deals_id)) {
-                $clone->deals_id = $this->generateUniqueDealsId();
-            }
-
-            // 5) Save clone
-            $clone->save();
-
-            // 6) Items: if request sent items[], use them; else copy from source
-            $reqItems = $request->input('items', []);
-            if (is_array($reqItems) && count($reqItems) > 0) {
-                $norm = $this->normalizeItemsFromRequest($reqItems);
-                foreach ($norm as $itemData) {
-                    $item = Item::find($itemData['item_no']);
-                    if (!$item)
-                        continue;
-                    DealItem::create([
-                        'deals_id' => $clone->deals_id,
-                        'item_no' => $item->item_no,
-                        'quantity' => $itemData['quantity'],
-                        'unit_price' => $itemData['unit_price'] ?? $item->price,
-                        'discount_percent' => $itemData['discount_percent'] ?? $item->disc ?? 0,
-                        'notes' => $itemData['notes'] ?? null,
-                    ]);
-                }
-            } else {
-                // clone items from source
-                $source->loadMissing('dealItems');
-                foreach ($source->dealItems as $di) {
-                    DealItem::create([
-                        'deals_id' => $clone->deals_id,
-                        'item_no' => $di->item_no,
-                        'quantity' => $di->quantity,
-                        'unit_price' => $di->unit_price,
-                        'discount_percent' => $di->discount_percent,
-                        'notes' => $di->notes,
-                    ]);
-                }
-            }
-
-            // 7) Calculate deal_size if not set
-            if (empty($clone->deal_size)) {
-                $clone->deal_size = $clone->calculateTotalValue();
-                $clone->save();
-            }
-
-            // 8) Award points for the clone's stage (if provided)
-            $targetStage = strtolower($clone->stage ?? $source->stage);
-            $salperIds = $this->getSalperIdsForStage($request, $targetStage);
-            if (!empty($salperIds)) {
-                $this->awardStagePoints($clone->deals_id, $targetStage, $salperIds);
-            }
-
-            $this->clearKanbanCache();
-
-            return $clone->fresh();
-        });
-    }
-
-
     private function validateStoreRequest(Request $request)
     {
         return $request->validate([
@@ -434,8 +275,6 @@ class DealController extends Controller
             'photo_upload.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif', 'max:5120'],
             'quotation_upload.*' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
             'receipt_upload.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
-
-            'duplicate_of' => ['nullable', 'string', 'exists:deals,deals_id'],
         ]);
     }
 
@@ -734,52 +573,43 @@ class DealController extends Controller
 
             $this->validateStageProgression($oldStage, $newStage);
 
-            // validate inputs relevant to stage update
-            $validated = $request->validate([
+            $rules = [
                 'stage' => ['required', Rule::in(self::ALLOWED_STAGES)],
+                // no need to force array; we parse both salper_ids and sales_id_visit
                 'salper_ids' => ['nullable'],
                 'sales_id_visit' => ['nullable', 'integer', 'exists:salpers,salper_id'],
                 'sales_id_quotation' => ['nullable', 'integer', 'exists:salpers,salper_id'],
                 'sales_id_won' => ['nullable', 'integer', 'exists:salpers,salper_id'],
                 'salper_id_mapping' => ['nullable', 'integer', 'exists:salpers,salper_id'],
+            ];
 
-                // allow uploads when advancing (they will attach to the new record)
-                'photo_upload.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif', 'max:5120'],
-                'quotation_upload.*' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
-                'receipt_upload.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            $validated = $request->validate($rules);
+            $validated = $this->handleFileUploads($request, $validated);
+            $validated['stage'] = $newStage;
 
-                // optional common fields you might pass along on advance
-                'notes' => ['nullable', 'string', 'max:2000'],
-                'payment_term' => ['nullable', 'string', 'max:1000'],
-                'quotation_exp_date' => ['nullable', 'date', 'after:today'],
-                'lost_reason' => ['nullable', 'string', 'max:1000'],
-                'receipt_number' => ['nullable', 'string', 'max:255'],
-            ]);
+            $updatedDeal = DB::transaction(function () use ($deal, $validated, $oldStage, $request, $newStage) {
+                $deal->fill($validated)->save();
 
-            // Build override for the clone
-            $override = array_merge($validated, [
-                'deals_id' => $this->generateUniqueDealsId(),
-                'stage' => $newStage,
-                'created_date' => now()->toDateString(),
-                'closed_date' => null,
-                // Reset close-specific fields, unless explicitly provided in $validated
-                'lost_reason' => $validated['lost_reason'] ?? null,
-                'receipt_number' => $validated['receipt_number'] ?? null,
-            ]);
+                // ✅ Award points for new stage
+                $salperIds = $this->getSalperIdsForStage($request, $newStage);
+                if (!empty($salperIds)) {
+                    $this->awardStagePoints($deal->deals_id, $newStage, $salperIds);
+                }
 
-            $newDeal = $this->duplicateDeal($deal, $override, $request);
+                $this->clearKanbanCache();
+                return $deal->fresh();
+            });
 
             return response()->json([
                 'ok' => true,
-                'message' => 'Stage berhasil di-advance dengan membuat deal baru',
+                'message' => 'Stage berhasil diupdate',
                 'deal' => [
-                    'deals_id' => $newDeal->deals_id,
-                    'deal_name' => $newDeal->deal_name,
-                    'deal_size' => $newDeal->deal_size,
-                    'stage' => $newDeal->stage,
-                    'created_at' => $newDeal->created_at->toISOString(),
-                ],
-                'redirect' => route('deals.show', $newDeal->deals_id),
+                    'deals_id' => $updatedDeal->deals_id,
+                    'deal_name' => $updatedDeal->deal_name,
+                    'deal_size' => $updatedDeal->deal_size,
+                    'stage' => $updatedDeal->stage,
+                    'updated_at' => $updatedDeal->updated_at->toISOString()
+                ]
             ]);
 
         } catch (\Throwable $e) {
