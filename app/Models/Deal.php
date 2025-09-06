@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -106,5 +107,23 @@ class Deal extends Model
                 ->orWhere('deals_id', 'like', "%{$search}%")
                 ->orWhere('stage', 'like', "%{$search}%");
         });
+    }
+
+    public function getStageDaysAttribute()
+    {
+        $start = $this->created_date ?: $this->created_at;
+        $end = $this->closed_date ?: Carbon::now();
+
+        if (!$start) {
+            return null;
+        }
+
+        return $end->diffInDays($start);
+    }
+
+    public function getStageDaysLabelAttribute()
+    {
+        $days = $this->stage_days;
+        return $days === null ? null : ($days . ' hari di stage ini');
     }
 }

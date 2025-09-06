@@ -15,7 +15,7 @@
 
         {{-- actions --}}
         <div class="d-flex justify-content-between align-items-center mb-3">
-            @can('create-user')
+            @can('create-users')
                 <a href="{{ route('users.create') }}" class="btn btn-success btn-sm">
                     <i class="fa fa-plus-circle"></i> Add New User
                 </a>
@@ -64,13 +64,13 @@
                                         <i class="fa fa-eye"></i> Show
                                     </a>
 
-                                    @can('edit-user')
+                                    @can('edit-users')
                                         <a href="{{ route('users.edit', $user->id) }}" class="btn btn-primary btn-xs">
                                             <i class="fa fa-pencil-alt"></i> Edit
                                         </a>
                                     @endcan
 
-                                    @can('delete-user')
+                                    @can('delete-users')
                                         @if (auth()->id() !== $user->id)
                                             <button type="submit" class="btn btn-danger btn-xs">
                                                 <i class="fa fa-trash"></i> Delete

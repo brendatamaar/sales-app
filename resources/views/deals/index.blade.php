@@ -64,7 +64,7 @@
     <main class="kanban-grid d-grid gap-3" style="grid-template-columns: repeat(5, 1fr);" id="kanbanBoard">
         @php
             $stageConfig = [
-                'mapping' => ['label' => 'MAPPING', 'color' => 'bg-secondary'],
+                'mapping' => ['label' => 'MAPPING', 'color' => 'bg-primary'],
                 'visit' => ['label' => 'VISIT', 'color' => 'bg-info'],
                 'quotation' => ['label' => 'QUOTATION', 'color' => 'bg-warning'],
                 'won' => ['label' => 'WON', 'color' => 'bg-success'],
@@ -110,7 +110,13 @@
                                     {{ $deal->deal_size ? 'Rp ' . number_format($deal->deal_size, 0, ',', '.') : 'Rp 0' }}
                                 </div>
                                 <div class="small text-muted">
-                                    Created at: {{ $deal->created_at ? $deal->created_at->format('d/m/Y') : '-' }}
+                                    Created at: {{ $deal->created_date ? $deal->created_date->format('d/m/Y') : '-' }}
+                                </div>
+                                <div class="small text-muted">
+                                    Closed at: {{ $deal->closed_date ? $deal->closed_date->format('d/m/Y') : '-' }}
+                                </div>
+                                <div class="small text-muted fst-italic">
+                                    {{ $deal->stage_days_label ?? '-' }}
                                 </div>
                             </div>
                         </article>
@@ -160,7 +166,7 @@
                                 </td>
                                 <td data-label="Store">{{ $deal->store_name ?? '-' }}</td>
                                 <td data-label="Created Date">
-                                    {{ $deal->created_at ? $deal->created_at->format('d/m/Y') : '-' }}</td>
+                                    {{ $deal->created_date ? $deal->created_date->format('d/m/Y') : '-' }}</td>
                                 <td data-label="Actions">
                                     <a href="{{ route('deals.show', $deal->deals_id) }}"
                                         class="btn btn-sm btn-outline-primary">
@@ -206,7 +212,7 @@
                         <input type="hidden" name="duplicate_of" id="duplicate_of">
 
                         {{-- Stage Selection --}}
-                        <fieldset class="form-section mb-4">
+                        <fieldset class="form-section mb-4" data-stages="mapping,visit">
                             <legend class="h6"><i class="fas fa-layer-group me-2" aria-hidden="true"></i> Pilih Stage
                             </legend>
                             <div class="form-group">
@@ -463,14 +469,8 @@
                             <legend class="h6"><i class="fas fa-times-circle me-2" aria-hidden="true"></i> Alasan
                                 Gagal</legend>
                             <div class="form-group">
-                                <label for="failureReason" class="form-label">Alasan Gagal</label>
-                                <textarea class="form-control" id="failureReason" name="lost_reason" rows="3"
-                                    placeholder="Jelaskan mengapa deal ini gagal..."></textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="stageSelect" class="form-label">Stage <span
-                                        class="text-danger">*</span></label>
+                                <label for="stageSelect" class="form-label">Alasan
+                                    Gagal <span class="text-danger">*</span></label>
                                 <select class="form-select" id="failureReason" name="lost_reason" required
                                     aria-describedby="failureHelp">
                                     <option value="">Pilih Alasan</option>
@@ -868,7 +868,7 @@
 
 
             isValidStageTransition(fromStage, toStage) {
-                if (fromStage == "won") {
+                if (fromStage == "won" || toStage == "lost") {
                     return true
                 }
 
@@ -1104,10 +1104,10 @@
                 e.preventDefault();
                 const form = e.target;
 
-                if (!form.checkValidity()) {
-                    form.classList.add('was-validated');
-                    return;
-                }
+                // if (!form.checkValidity()) {
+                //     form.classList.add('was-validated');
+                //     return;
+                // }
 
                 const storeId = document.getElementById('store_id').value;
                 if (!storeId) {
@@ -1765,6 +1765,7 @@
                 } else {
                     console.log(message);
                     alert(message);
+                    window.location.reload();
                 }
             }
         }

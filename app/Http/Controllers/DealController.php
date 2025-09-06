@@ -78,7 +78,7 @@ class DealController extends Controller
             }
 
             $query = Deal::query()
-                ->select(['deals_id', 'deal_name', 'stage', 'deal_size', 'created_at'])
+                ->select(['deals_id', 'deal_name', 'stage', 'deal_size', 'created_date', 'closed_date'])
                 ->byStage($stage)
                 ->when($search, fn($q) => $q->search($search))
                 ->latest('updated_at');
@@ -210,7 +210,7 @@ class DealController extends Controller
                 ], 201);
             }
 
-            return redirect()->route('deals.show', $deal->deals_id)
+            return redirect()->route('deals.index', $deal->deals_id)
                 ->with('success', 'Deal berhasil dibuat');
 
         } catch (Exception $e) {
