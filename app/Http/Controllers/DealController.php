@@ -477,36 +477,6 @@ class DealController extends Controller
         }
     }
 
-    public function generateQuotation(Request $request, string $id)
-    {
-        $deal = Deal::with(['dealItems.item'])->findOrFail($id);
-        // bisa batasi hanya jika stage sudah QUOTATION
-        // if (strtolower($deal->stage) !== 'quotation') {
-        //     return response()->json(['ok' => false, 'message' => 'Stage belum QUOTATION'], 422);
-        // }
-
-        $exists = Quotation::where('deals_id', $deal->deals_id)
-            ->whereDate('created_date', $deal->created_date ?? now())
-            ->exists();
-        if ($exists) {
-            return response()->json(['ok' => true, 'message' => 'Quotation sudah ada'], 200);
-        }
-
-        $q = $this->generateQuotationRecord($deal);
-        return response()->json([
-            'ok' => true,
-            'message' => 'Quotation berhasil digenerate',
-            'quotation' => [
-                'id' => $q->id,
-                'quotation_no' => $q->quotation_no,
-                'grand_total' => $q->grand_total,
-                'created_date' => optional($q->created_date)->toDateString(),
-                'expired_date' => optional($q->expired_date)->toDateString(),
-                'file' => $q->file_path,
-            ]
-        ], 201);
-    }
-
     private function clearKanbanCache()
     {
         // If you use a cache store without wildcards, just forget the known key(s).
@@ -726,73 +696,5 @@ class DealController extends Controller
             array_filter((array) $ids)
         )));
         return array_filter($ids, fn($v) => $v > 0);
-    }
-
-    private function buildQuotationNo(Deal $deal, ?Carbon $created): string
-    {
-        // Contoh format: MITRA10/HTXABC123/20250827
-        $datePart = ($created ?? now())->format('Ymd');
-        return 'MITRA10/' . $deal->deals_id . '/' . $datePart;
-    }
-
-    private function generateQuotationRecord(Deal $deal): Quotation
-    {
-        $deal->loadMissing(['dealItems.item']);
-        $created = $deal->created_date ? Carbon::parse($deal->created_date) : now();
-        $expired = $deal->quotation_exp_date ? Carbon::parse($deal->quotation_exp_date) : null;
-        $validDays = $expired ? $created->diffInDays($expired, false) : null; // bisa negatif kalau expired < created
-
-        $grandTotal = $deal->dealItems->sum('line_total') ?: (float) ($deal->deal_size ?? 0);
-
-        $quotation = Quotation::create([
-            'quotation_no' => $this->buildQuotationNo($deal, $created),
-            'deals_id' => $deal->deals_id,
-            'created_date' => $created,
-            'expired_date' => $expired,
-            'valid_days' => $validDays,
-            'store_id' => $deal->store_id,
-            'store_name' => $deal->store_name,
-            'customer_name' => $deal->cust_name,
-            'no_rek_store' => $deal->no_rek_store,
-            'payment_term' => $deal->payment_term,
-            'grand_total' => $grandTotal,
-            'meta' => [
-                'template' => 'Mitra10 - Quotation.xlsx',
-                'mapping' => [
-                    'store_id' => $deal->store_id,
-                    'store_name' => $deal->store_name,
-                    'deals_id' => $deal->deals_id,
-                    'created_date' => optional($created)->toDateString(),
-                    'quotation_exp_date' => optional($expired)->toDateString(),
-                    'quotation_expired_date__in_days' => $validDays,
-                    'cust_name' => $deal->cust_name,
-                    'payment_term' => $deal->payment_term,
-                    'no_rel_store' => $deal->no_rek_store,
-                    'deal_size' => $grandTotal,
-                ],
-            ],
-        ]);
-
-        // simpan item (maks 15 baris seperti template)
-        $row = 1;
-        foreach ($deal->dealItems as $di) {
-            QuotationItem::create([
-                'quotation_id' => $quotation->id,
-                'row_no' => $row++,
-                'item_no' => $di->item_no,
-                'item_name' => optional($di->item)->item_name ?? 'Unknown Item',
-                'uom' => optional($di->item)->uom ?? null,
-                'quantity' => (int) $di->quantity,
-                'unit_price' => (float) ($di->unit_price ?? 0),
-                'discount_percent' => (float) ($di->discount_percent ?? 0),
-                'line_total' => (float) ($di->line_total ?? 0),
-            ]);
-        }
-
-        $exporter = app(QuotationExporter::class);
-        $publicPath = $exporter->export($quotation); // e.g., 'storage/quotations/2025/08/MITRA10_HTXABC_20250827.xlsx'
-        $quotation->update(['file_path' => $publicPath]);
-
-        return $quotation->fresh(['items']);
     }
 }

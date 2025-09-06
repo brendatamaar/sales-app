@@ -51,27 +51,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/users/search', [UserController::class, 'search'])->name('users.search');
 
-    Route::patch('/deals/{deal}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
     Route::get('/deals/{id}', [DealController::class, 'getDeal'])->name('deals.api.show');
-
     Route::patch('/deals/{id}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
-    Route::post('/deals/{id}/generate-quotation', [DealController::class, 'generateQuotation'])
-        ->name('deals.generateQuotation');
 
-    Route::get('/deals/{id}/quotation/download', function ($id) {
-        $q = Quotation::where('deals_id', $id)->latest('id')->firstOrFail();
-
-        if (!$q->file_path || !Storage::disk('public')->exists($q->file_path)) {
-            abort(404, 'File not found');
-        }
-
-        $absPath = Storage::disk('public')->path($q->file_path); // .../storage/app/public/quotations/...
-        return response()->download(
-            $absPath,
-            basename($absPath),
-            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-        );
-    })->name('deals.quotation.download');
 
     Route::resource('customers', DataCustomerController::class);
     Route::resource('salpers', SalperController::class);

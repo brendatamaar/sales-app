@@ -442,10 +442,6 @@
 
                             <button type="button" class="btn btn-success btn-sm mt-2" id="generateQuotationBtn">Generate
                                 Quotation</button>
-
-                            <a id="btnDownloadQuotation" class="btn btn-success" target="_blank">
-                                <i class="fas fa-file-excel me-1"></i> Download Quotation
-                            </a>
                         </fieldset>
 
                         {{-- Receipt (WON) --}}
@@ -1693,43 +1689,6 @@
         document.getElementById('kanbanViewBtn')?.addEventListener('click', function() {
             document.getElementById('listViewBtn')?.classList.remove('active');
             this.classList.add('active');
-        });
-
-        document.getElementById('generateQuotationBtn')?.addEventListener('click', async () => {
-            const dealId = document.getElementById('deals_id')?.value;
-            if (!dealId) return alert('Deals ID belum tersedia.');
-
-            try {
-                // pastikan stage sudah QUOTATION di form
-                // const stageSel = document.getElementById('stageSelect');
-                // if (stageSel.value !== 'QUOTATION') {
-                //     return alert('Silakan pilih stage QUOTATION terlebih dahulu.');
-                // }
-
-                const res = await fetch(`/deals/${encodeURIComponent(dealId)}/generate-quotation`, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]')?.content ||
-                            '')
-                    },
-                    credentials: 'same-origin'
-                });
-                const data = await res.json();
-                if (!res.ok || data?.ok === false) throw new Error(data?.message || `HTTP ${res.status}`);
-
-                if (data?.quotation?.file) {
-                    const a = document.getElementById('btnDownloadQuotation');
-                    if (a) {
-                        a.href = `/${data.quotation.file}`;
-                        a.classList.remove('d-none');
-                    }
-                }
-                alert(data?.message || 'Quotation berhasil digenerate');
-            } catch (e) {
-                console.error(e);
-                alert(`Gagal generate quotation: ${e.message}`);
-            }
         });
     </script>
 
