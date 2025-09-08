@@ -21,14 +21,107 @@
 
     {{-- Action Bar --}}
     <section class="action-bar d-flex justify-content-between align-items-center mb-3">
-        <div class="action-left d-flex align-items-center gap-2">
-            <div class="search-box position-relative">
-                <i class="fas fa-search position-absolute" style="left:10px;top:50%;transform:translateY(-50%);"
-                    aria-hidden="true"></i>
-                <input class="form-control ps-4" type="text" placeholder="Search deal by name" id="dealSearchInput"
-                    aria-label="Search deals">
-            </div>
+        <form method="GET" action="{{ route('deals.index') }}" class="card card-body mb-3">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label">Deals ID</label>
+                    <input type="text" name="deals_id" value="{{ $filters['deals_id'] ?? '' }}" class="form-control"
+                        placeholder="e.g. DL-2025-001">
+                </div>
 
+                <div class="col-md-3">
+                    <label class="form-label">Deals Name</label>
+                    <input type="text" name="deal_name" value="{{ $filters['deal_name'] ?? '' }}" class="form-control"
+                        placeholder="Search by name">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Salper ID (from Points)</label>
+                    <input type="text" name="salper_id" value="{{ $filters['salper_id'] ?? '' }}" class="form-control"
+                        placeholder="e.g. SLP-001">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Lost Reason</label>
+                    <select name="lost_reason" class="form-select">
+                        <option value="">— All —</option>
+                        @php
+                            $reasons = [
+                                'Bad Timing',
+                                'tidak ada response',
+                                'tidak tertarik',
+                                'memilih competitor',
+                                'Harga khusus tidak diapproval',
+                                'permasalahan internal',
+                                'produk yg dicari tidak ada',
+                            ];
+                        @endphp
+                        @foreach ($reasons as $reason)
+                            <option value="{{ $reason }}" @if (($filters['lost_reason'] ?? '') === $reason) selected @endif>
+                                {{ $reason }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Receipt Number</label>
+                    <input type="text" name="receipt_number" value="{{ $filters['receipt_number'] ?? '' }}"
+                        class="form-control" placeholder="Receipt no">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Customer ID</label>
+                    <input type="text" name="id_cust" value="{{ $filters['id_cust'] ?? '' }}" class="form-control"
+                        placeholder="ID Customer">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Created Date (From)</label>
+                    <input type="date" name="created_date_from" value="{{ $filters['created_date_from'] ?? '' }}"
+                        class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Created Date (To)</label>
+                    <input type="date" name="created_date_to" value="{{ $filters['created_date_to'] ?? '' }}"
+                        class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Closed Date (From)</label>
+                    <input type="date" name="closed_date_from" value="{{ $filters['closed_date_from'] ?? '' }}"
+                        class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Closed Date (To)</label>
+                    <input type="date" name="closed_date_to" value="{{ $filters['closed_date_to'] ?? '' }}"
+                        class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Per Page</label>
+                    <select name="per_page" class="form-select">
+                        @foreach ([10, 15, 25, 50, 100] as $pp)
+                            <option value="{{ $pp }}" @if (request('per_page', 15) == $pp) selected @endif>
+                                {{ $pp }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-md-12 d-flex gap-2 mt-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-1"></i> Apply Filters
+                    </button>
+                    <a href="{{ route('deals.index') }}" class="btn btn-secondary">
+                        Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+
+
+        <div class="action-left d-flex align-items-center gap-2">
             <select class="form-select" style="width:120px" id="itemsPerPage" aria-label="Items per page">
                 <option value="25" selected>Show 25</option>
                 <option value="50">Show 50</option>
@@ -138,6 +231,7 @@
             </div>
         @endforeach
 
+        {{ $deals->links() }}
     </main>
 
     {{-- List View --}}
@@ -203,6 +297,7 @@
             </table>
         </div>
     </main>
+
 
     {{-- Add Deal Modal --}}
     <div class="modal fade" id="dealModal" tabindex="-1" aria-labelledby="dealModalLabel" aria-hidden="true">

@@ -38,19 +38,91 @@ class DealController extends Controller
     public function index(Request $request)
     {
         $searchQuery = $request->get('q');
-        $perPage = $request->get('per_page', 25);
+        $perPage = (int) $request->get('per_page', 25);
         $stage = $request->get('stage');
+
+        $filters = $request->only([
+            'deals_id',
+            'deal_name',
+            'salper_id',
+            'lost_reason',
+            'receipt_number',
+            'id_cust',
+            // exact date (optional)
+            'created_date',
+            'closed_date',
+            // range (optional)
+            'created_date_from',
+            'created_date_to',
+            'closed_date_from',
+            'closed_date_to',
+        ]);
 
         $dealsQuery = Deal::query()
             ->select(['deals_id', 'deal_name', 'stage', 'deal_size', 'created_at', 'updated_at'])
             ->when($searchQuery, fn($q) => $q->search($searchQuery))
             ->when($stage, fn($q) => $q->byStage($stage))
+
+            // --- NEW: field filters ---
+            ->when(!empty($filters['deals_id']), function ($q) use ($filters) {
+                $q->where('deals_id', 'like', '%' . $filters['deals_id'] . '%');
+            })
+            ->when(!empty($filters['deal_name']), function ($q) use ($filters) {
+                $q->where('deal_name', 'like', '%' . $filters['deal_name'] . '%');
+            })
+            ->when(!empty($filters['lost_reason']), function ($q) use ($filters) {
+                $q->where('lost_reason', 'like', '%' . $filters['lost_reason'] . '%');
+            })
+            ->when(!empty($filters['receipt_number']), function ($q) use ($filters) {
+                $q->where('receipt_number', 'like', '%' . $filters['receipt_number'] . '%');
+            })
+            ->when(!empty($filters['id_cust']), function ($q) use ($filters) {
+                $q->where('id_cust', 'like', '%' . $filters['id_cust'] . '%');
+            })
+
+            ->when(!empty($filters['salper_id']), function ($q) use ($filters) {
+                $q->whereHas('points', function ($p) use ($filters) {
+                    $p->where('salper_id', $filters['salper_id']);
+                });
+            })
+
+            ->when(!empty($filters['created_date']), function ($q) use ($filters) {
+                $q->whereDate('created_date', $filters['created_date']);
+            })
+            ->when(!empty($filters['created_date_from']), function ($q) use ($filters) {
+                $q->whereDate('created_date', '>=', $filters['created_date_from']);
+            })
+            ->when(!empty($filters['created_date_to']), function ($q) use ($filters) {
+                $q->whereDate('created_date', '<=', $filters['created_date_to']);
+            })
+
+            ->when(!empty($filters['closed_date']), function ($q) use ($filters) {
+                $q->whereDate('closed_date', $filters['closed_date']);
+            })
+            ->when(!empty($filters['closed_date_from']), function ($q) use ($filters) {
+                $q->whereDate('closed_date', '>=', $filters['closed_date_from']);
+            })
+            ->when(!empty($filters['closed_date_to']), function ($q) use ($filters) {
+                $q->whereDate('closed_date', '<=', $filters['closed_date_to']);
+            })
+
             ->latest('updated_at');
 
-        $deals = $dealsQuery->paginate($perPage)->appends($request->query());
+        $deals = $dealsQuery
+            ->paginate($perPage)
+            ->appends($request->query());
 
-        $cacheKey = 'deals_kanban_' . md5(($searchQuery ?? '') . '|' . ($stage ?? ''));
-        $kanbanData = Cache::remember($cacheKey, now()->addMinutes(5), fn() => $this->getKanbanData($searchQuery, $stage));
+        // Keep your existing kanban + stats behavior.
+        // NOTE: these currently only consider $searchQuery and $stage.
+        // If you want kanban/stats to reflect extra filters too, we can extend those methods.
+        $cacheKey = 'deals_kanban_' . md5(json_encode([
+            'q' => $searchQuery,
+            'stage' => $stage,
+            'filter' => $filters,
+        ]));
+        $kanbanData = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($searchQuery, $stage, $filters) {
+            return $this->getKanbanData($searchQuery, $stage, $filters);
+        });
 
         $stats = $this->getDealStatistics($searchQuery, $stage);
 
@@ -63,33 +135,134 @@ class DealController extends Controller
             'stats' => $stats,
             'currentStage' => $stage,
             'perPage' => $perPage,
+            'filters' => $filters,
         ]);
     }
 
-    private function getKanbanData($search = null, $stageFilter = null)
+    // In App\Http\Controllers\DealController.php
+
+    /**
+     * Build Kanban data (grouped deals + counts) honoring search, stage, and filters.
+     *
+     * @param  string|null $searchQuery
+     * @param  string|null $stage
+     * @param  array       $filters  [
+     *   deals_id, deal_name, salper_id, lost_reason, receipt_number, id_cust,
+     *   created_date, closed_date, created_date_from, created_date_to,
+     *   closed_date_from, closed_date_to
+     * ]
+     * @return array{dealsByStage: array, counts: array}
+     */
+    protected function getKanbanData($searchQuery = null, $stage = null, array $filters = [])
     {
+        $stages = self::ALLOWED_STAGES;
+
+        // Base query
+        $q = Deal::query()
+            ->select([
+                'deals_id',
+                'deal_name',
+                'stage',
+                'deal_size',
+                'created_date',
+                'closed_date',
+                'store_id',
+                'store_name',
+                'lost_reason',
+                'receipt_number',
+                'id_cust',
+                'updated_at',
+            ])
+            // Existing quick search + stage filter (keep your scopes if you have them)
+            ->when($searchQuery, function ($qq) use ($searchQuery) {
+                if (method_exists(Deal::class, 'scopeSearch')) {
+                    $qq->search($searchQuery);
+                } else {
+                    $qq->where(function ($w) use ($searchQuery) {
+                        $w->where('deals_id', 'like', "%{$searchQuery}%")
+                            ->orWhere('deal_name', 'like', "%{$searchQuery}%")
+                            ->orWhere('store_name', 'like', "%{$searchQuery}%");
+                    });
+                }
+            })
+            ->when($stage, function ($qq) use ($stage) {
+                if (method_exists(Deal::class, 'scopeByStage')) {
+                    $qq->byStage($stage);
+                } else {
+                    $qq->where('stage', $stage);
+                }
+            })
+
+            ->when(!empty($filters['deals_id']), function ($qq) use ($filters) {
+                $qq->where('deals_id', 'like', '%' . $filters['deals_id'] . '%');
+            })
+            ->when(!empty($filters['deal_name']), function ($qq) use ($filters) {
+                $qq->where('deal_name', 'like', '%' . $filters['deal_name'] . '%');
+            })
+            ->when(!empty($filters['lost_reason']), function ($qq) use ($filters) {
+                // exact match; switch to LIKE if you want contains
+                $qq->where('lost_reason', $filters['lost_reason']);
+            })
+            ->when(!empty($filters['receipt_number']), function ($qq) use ($filters) {
+                $qq->where('receipt_number', 'like', '%' . $filters['receipt_number'] . '%');
+            })
+            ->when(!empty($filters['id_cust']), function ($qq) use ($filters) {
+                $qq->where('id_cust', 'like', '%' . $filters['id_cust'] . '%');
+            })
+            // salper_id via Point relation
+            ->when(!empty($filters['salper_id']), function ($qq) use ($filters) {
+                $qq->whereHas('points', function ($p) use ($filters) {
+                    $p->where('salper_id', $filters['salper_id']);
+                });
+            })
+            // Dates (created_date)
+            ->when(!empty($filters['created_date']), function ($qq) use ($filters) {
+                $qq->whereDate('created_date', $filters['created_date']);
+            })
+            ->when(!empty($filters['created_date_from']), function ($qq) use ($filters) {
+                $qq->whereDate('created_date', '>=', $filters['created_date_from']);
+            })
+            ->when(!empty($filters['created_date_to']), function ($qq) use ($filters) {
+                $qq->whereDate('created_date', '<=', $filters['created_date_to']);
+            })
+            // Dates (closed_date)
+            ->when(!empty($filters['closed_date']), function ($qq) use ($filters) {
+                $qq->whereDate('closed_date', $filters['closed_date']);
+            })
+            ->when(!empty($filters['closed_date_from']), function ($qq) use ($filters) {
+                $qq->whereDate('closed_date', '>=', $filters['closed_date_from']);
+            })
+            ->when(!empty($filters['closed_date_to']), function ($qq) use ($filters) {
+                $qq->whereDate('closed_date', '<=', $filters['closed_date_to']);
+            })
+            ->latest('updated_at');
+
+        $rows = $q->get();
+
         $dealsByStage = [];
         $counts = [];
-
-        foreach (self::ALLOWED_STAGES as $stage) {
-            if ($stageFilter && $stageFilter !== $stage) {
-                $dealsByStage[$stage] = collect();
-                $counts[$stage] = 0;
-                continue;
-            }
-
-            $query = Deal::query()
-                ->select(['deals_id', 'deal_name', 'stage', 'deal_size', 'created_date', 'closed_date'])
-                ->byStage($stage)
-                ->when($search, fn($q) => $q->search($search))
-                ->latest('updated_at');
-
-            $dealsByStage[$stage] = $query->take(50)->get();
-            $counts[$stage] = (clone $query)->count();
+        foreach ($stages as $s) {
+            $dealsByStage[$s] = [];
+            $counts[$s] = 0;
         }
 
-        return compact('dealsByStage', 'counts');
+        // Group results
+        foreach ($rows as $deal) {
+            $key = strtolower((string) $deal->stage);
+            if (!array_key_exists($key, $dealsByStage)) {
+                $dealsByStage[$key] = [];
+                $counts[$key] = 0;
+            }
+            $dealsByStage[$key][] = $deal;
+            $counts[$key]++;
+        }
+
+        return [
+            'dealsByStage' => $dealsByStage,
+            'counts' => $counts,
+        ];
     }
+
 
     private function getDealStatistics($search = null, $stageFilter = null)
     {

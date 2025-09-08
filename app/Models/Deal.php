@@ -112,6 +112,54 @@ class Deal extends Model
         });
     }
 
+    public function scopeFilter($q, array $f = [])
+    {
+        $q->when(!empty($f['deals_id']), function ($qq) use ($f) {
+            $qq->where('deals_id', 'like', '%' . $f['deals_id'] . '%');
+        });
+
+        $q->when(!empty($f['deal_name']), function ($qq) use ($f) {
+            $qq->where('deal_name', 'like', '%' . $f['deal_name'] . '%');
+        });
+
+        $q->when(!empty($f['salper_id']), function ($qq) use ($f) {
+            // Filter via Point model (salper_id)
+            $qq->whereHas('points', function ($p) use ($f) {
+                $p->where('salper_id', $f['salper_id']);
+            });
+        });
+
+        $q->when(!empty($f['lost_reason']), function ($qq) use ($f) {
+            $qq->where('lost_reason', $f['lost_reason']);
+        });
+
+        $q->when(!empty($f['receipt_number']), function ($qq) use ($f) {
+            $qq->where('receipt_number', 'like', '%' . $f['receipt_number'] . '%');
+        });
+
+        $q->when(!empty($f['id_cust']), function ($qq) use ($f) {
+            $qq->where('id_cust', 'like', '%' . $f['id_cust'] . '%');
+        });
+
+        // Date ranges (created_date)
+        $q->when(!empty($f['created_date_from']), function ($qq) use ($f) {
+            $qq->whereDate('created_date', '>=', $f['created_date_from']);
+        });
+        $q->when(!empty($f['created_date_to']), function ($qq) use ($f) {
+            $qq->whereDate('created_date', '<=', $f['created_date_to']);
+        });
+
+        // Date ranges (closed_date)
+        $q->when(!empty($f['closed_date_from']), function ($qq) use ($f) {
+            $qq->whereDate('closed_date', '>=', $f['closed_date_from']);
+        });
+        $q->when(!empty($f['closed_date_to']), function ($qq) use ($f) {
+            $qq->whereDate('closed_date', '<=', $f['closed_date_to']);
+        });
+
+        return $q;
+    }
+
     public function getStageDaysAttribute()
     {
         $start = $this->created_date ?: $this->created_at;
