@@ -14,6 +14,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SalperController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DealReportController;
 use App\Models\Quotation;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -55,6 +56,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/deals/{id}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
     Route::post('/deals/{deal}/quotation/generate', [DealController::class, 'generateQuotation'])
         ->name('deals.quotation.generate');
+
+    Route::get('/deal-reports', [DealReportController::class, 'index'])->name('deal-reports.index');
+    Route::get('/deal-reports/{dealsId}', [DealReportController::class, 'show'])->name('deal-reports.show');
 
     Route::resource('customers', DataCustomerController::class);
     Route::resource('salpers', SalperController::class);

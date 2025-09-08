@@ -56,6 +56,13 @@
             </a>
         </li>
 
+        <li class="nav-item {{ Route::is('deal-reports.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('deal-reports.index') }}">
+                <i class="menu-icon mdi mdi-briefcase"></i>
+                <span class="menu-title">Deal Reports</span>
+            </a>
+        </li>
+
 
         <li class="nav-item {{ Route::is('customers.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('customers.index') }}">
@@ -71,12 +78,12 @@
             </a>
         </li>
 
-        <li class="nav-item {{ Route::is('dokumen.*') ? 'active' : '' }}">
+        {{-- <li class="nav-item {{ Route::is('dokumen.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('dokumen.index') }}">
                 <i class="menu-icon mdi mdi-file-document"></i>
                 <span class="menu-title">Dokumen</span>
             </a>
-        </li>
+        </li> --}}
 
         <li class="nav-item {{ Route::is('stores.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('stores.index') }}">

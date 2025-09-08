@@ -365,14 +365,14 @@ class DealController extends Controller
             $validatedData = $this->handleFileUploads($request, $validatedData);
 
             $updatedDeal = DB::transaction(function () use ($deal, $validatedData, $oldStage, $request) {
-                $deal->update($validatedData);
 
                 $this->handleDealItems($request, $deal->deals_id);
 
+                $deal->fill($validatedData);
                 if (empty($validatedData['deal_size'])) {
                     $deal->deal_size = $deal->calculateTotalValue();
-                    $deal->save();
                 }
+                $deal->save();
 
                 // ✅ Always award points if salper provided (even if stage didn’t change)
                 $targetStage = $validatedData['stage'] ?? $deal->stage;
@@ -443,17 +443,18 @@ class DealController extends Controller
             // 'payment_term' => ['sometimes', 'string', 'max:1000'],
             // 'quotation_exp_date' => ['sometimes', 'date', 'after:today'],
 
-            // ✅ Approval harga khusus
-            'status_approval_harga' => [
-                'sometimes',
-                'string',
-                'max:255',
-                Rule::in([
-                    'REQUEST_HARGA_KHUSUS',
-                    'APPROVED_HARGA_KHUSUS',
-                    'NOT_APPROVED_HARGA_KHUSUS',
-                ])
-            ],
+            // Approval harga khusus
+            // 'status_approval_harga' => [
+            //     'sometimes',
+            //     'string',
+            //     'max:255',
+            //     Rule::in([
+            //         'REQUEST_HARGA_KHUSUS',
+            //         'APPROVED_HARGA_KHUSUS',
+            //         'NOT_APPROVED_HARGA_KHUSUS',
+            //         ''
+            //     ])
+            // ],
 
             // Items
             'items' => ['sometimes', 'array', 'max:50'],
@@ -700,14 +701,13 @@ class DealController extends Controller
     private function getSalperIdsForStage(Request $request, string $stage): array
     {
         // Primary: salper_ids (array or "1,2")
-        $ids = $request->input('salper_ids'); // << fix this line
+        $ids = $request->input('salper_ids');
         if (!empty($ids)) {
             if (is_string($ids)) {
                 $ids = array_filter(array_map('trim', explode(',', $ids)));
             }
             $ids = (array) $ids;
         } else {
-            // Fallback by stage-specific field names
             switch (strtolower($stage)) {
                 case 'mapping':
                     $ids = [$request->input('salper_id_mapping')];

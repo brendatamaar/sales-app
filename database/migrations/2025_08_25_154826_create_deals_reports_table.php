@@ -11,12 +11,12 @@ class CreateDealsReportsTable extends Migration
         Schema::create('deals_reports', function (Blueprint $table) {
             $table->bigIncrements('id');
 
-            // match deals.deals_id (string PK)
             $table->string('deals_id', 64);
-            $table->string('stage');                 // stage after the change
-            $table->unsignedBigInteger('updated_by')->nullable(); // user who caused the change
+            $table->string('stage');
+            $table->date('created_date')->nullable();
+            $table->date('closed_date')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
 
-            // only updated_at as requested
             $table->timestamp('updated_at')->useCurrent();
 
             // FKs

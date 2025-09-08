@@ -221,9 +221,9 @@
                                     <option value="">Pilih Stage</option>
                                     <option value="MAPPING" selected>Mapping</option>
                                     <option value="VISIT">Visit</option>
-                                    <option value="QUOTATION">Quotation</option>
-                                    <option value="WON">Won</option>
-                                    <option value="LOST">Lost</option>
+                                    <option value="QUOTATION" hidden>Quotation</option>
+                                    <option value="WON" hidden>Won</option>
+                                    <option value="LOST" hidden>Lost</option>
                                 </select>
                                 <div id="stageHelp" class="form-text">Pilih tahap deal saat ini</div>
                             </div>
@@ -914,7 +914,37 @@
                 if (stageHidden) stageHidden.value = (dealData.stage || 'mapping').toLowerCase();
 
                 const stageSelect = document.getElementById('stageSelect');
-                if (stageSelect) stageSelect.value = (dealData.stage || 'mapping').toUpperCase();
+                if (stageSelect) {
+                    const currentStage = (dealData.stage || 'mapping').toLowerCase();
+
+                    // Keep hidden value synced if user changes the select (only when enabled)
+                    stageSelect.onchange = () => {
+                        if (stageHidden) stageHidden.value = (stageSelect.value || 'MAPPING').toLowerCase();
+                    };
+
+                    if (currentStage === 'visit' || currentStage === 'quotation' || currentStage === 'won') {
+                        // LOCK the select to one option = the current stage
+                        while (stageSelect.options.length) stageSelect.remove(0);
+                        stageSelect.add(new Option(currentStage.toUpperCase(), currentStage.toUpperCase(), true, true));
+                        stageSelect.disabled = true;
+                        if (stageHidden) stageHidden.value = currentStage; // ensure backend receives it
+                    } else {
+                        // CREATE / MAPPING mode: only show MAPPING and VISIT, enabled
+                        while (stageSelect.options.length) stageSelect.remove(0);
+                        stageSelect.add(new Option('MAPPING', 'MAPPING'));
+                        stageSelect.add(new Option('VISIT', 'VISIT'));
+
+                        // preselect based on current data
+                        stageSelect.value = currentStage === 'visit' ? 'VISIT' : 'MAPPING';
+                        stageSelect.disabled = false;
+
+                        // sync hidden now
+                        if (stageHidden) stageHidden.value = (stageSelect.value || 'MAPPING').toLowerCase();
+                    }
+                }
+
+                // (keep the rest of your code)
+
 
                 const idInput = document.getElementById('dealId');
                 if (idInput) idInput.value = dealData.deals_id || '';
@@ -1102,10 +1132,10 @@
                 const stage = String(formData.get('stage') || '').toLowerCase();
                 const statusApproval = String(formData.get('status_approval_harga') || '').trim();
 
-                if (stage === 'visit' && !statusApproval) {
-                    alert('Silakan ajukan harga khusus terlebih dahulu.');
-                    return;
-                }
+                // if (stage === 'visit' && !statusApproval) {
+                //     alert('Silakan ajukan harga khusus terlebih dahulu.');
+                //     return;
+                // }
 
                 if (stage === 'quotation' && statusApproval == "REQUEST_HARGA_KHUSUS") {
                     alert('Request harga khusus di deals ini belum diapprove!');
