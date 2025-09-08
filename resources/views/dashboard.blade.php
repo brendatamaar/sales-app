@@ -41,6 +41,7 @@
         </div>
     </div>
 
+
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 g-3" style="margin-bottom: 20px;">
         {{-- Mapping --}}
         <div class="col d-flex">
@@ -130,6 +131,69 @@
                     </p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Store & Customer Input Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title mb-4">📍 Input Lokasi Toko</h3>
+
+            <!-- Input Alamat Toko -->
+            <div class="row mb-4">
+                <div class="col-md-9">
+                    <input id="alamatTokoInput" type="text" class="form-control" placeholder="Masukkan alamat toko...">
+                </div>
+                <div class="col-md-3">
+                    <button onclick="setStoreLocation()" class="btn btn-primary btn-block">Set Lokasi Toko</button>
+                </div>
+            </div>
+
+            <h4 class="mb-3">👥 Input Data Customer</h4>
+
+            <!-- Input Data Customer -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <input id="namaInput" type="text" class="form-control" placeholder="Nama Customer">
+                </div>
+                <div class="col-md-6">
+                    <input id="telpInput" type="text" class="form-control" placeholder="No. Telp Customer">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-9">
+                    <input id="alamatInput" type="text" class="form-control"
+                        placeholder="Masukkan alamat customer...">
+                </div>
+                <div class="col-md-3">
+                    <button onclick="addToList()" class="btn btn-primary btn-block">Tambah</button>
+                </div>
+            </div>
+
+            <div id="latlngResult" class="text-muted small mb-2"></div>
+            <div id="suggestions" class="bg-white border rounded shadow-sm" style="max-height: 160px; overflow-y: auto;">
+            </div>
+
+            <h5 class="mt-4 mb-3">📋 Datalist Customer</h5>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm table-hover table-bordered">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>#</th>
+                            <th>Nama</th>
+                            <th>Telp</th>
+                            <th>Alamat</th>
+                            <th>Latitude</th>
+                            <th>Longitude</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTable" class="text-center"></tbody>
+                </table>
+            </div>
+
+            <div id="map" style="width: 100%; height: 500px;" class="rounded border"></div>
         </div>
     </div>
 
@@ -355,6 +419,264 @@
         href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
 
     <script>
+        // Google Maps variables
+        let map;
+        let geocoder;
+        let markers = [];
+        let dataList = [];
+        let infoWindow;
+        let autocompleteService;
+        let storeMarker = null;
+        let storeCircles = [];
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: {
+                    lat: -6.2,
+                    lng: 106.8
+                },
+                zoom: 10,
+            });
+            geocoder = new google.maps.Geocoder();
+            infoWindow = new google.maps.InfoWindow();
+            autocompleteService = new google.maps.places.AutocompleteService();
+
+            document.getElementById("alamatInput").addEventListener("input", handleSuggestion);
+            document.getElementById("alamatTokoInput").addEventListener("input", handleSuggestionStore);
+        }
+
+        function handleSuggestion(e) {
+            const input = e.target.value;
+            if (!input) return;
+
+            autocompleteService.getPlacePredictions({
+                input: input
+            }, function(predictions, status) {
+                const suggestionsEl = document.getElementById("suggestions");
+                suggestionsEl.innerHTML = "";
+
+                if (status === google.maps.places.PlacesServiceStatus.OK && predictions.length > 0) {
+                    const ul = document.createElement("ul");
+                    ul.className = "list-unstyled mb-0 p-2";
+                    predictions.forEach(pred => {
+                        const li = document.createElement("li");
+                        li.className = "p-2 border-bottom cursor-pointer";
+                        li.style.cursor = "pointer";
+                        li.textContent = pred.description;
+                        li.onclick = () => {
+                            document.getElementById("alamatInput").value = pred.description;
+                            suggestionsEl.innerHTML = "";
+                        };
+                        li.onmouseover = () => li.style.backgroundColor = "#f8f9fa";
+                        li.onmouseout = () => li.style.backgroundColor = "";
+                        ul.appendChild(li);
+                    });
+                    suggestionsEl.appendChild(ul);
+                }
+            });
+        }
+
+        function handleSuggestionStore(e) {
+            const input = e.target.value;
+            if (!input) return;
+
+            autocompleteService.getPlacePredictions({
+                input: input
+            }, function(predictions, status) {
+                const suggestionsEl = document.getElementById("suggestions");
+                suggestionsEl.innerHTML = "";
+
+                if (status === google.maps.places.PlacesServiceStatus.OK && predictions.length > 0) {
+                    const ul = document.createElement("ul");
+                    ul.className = "list-unstyled mb-0 p-2";
+                    predictions.forEach(pred => {
+                        const li = document.createElement("li");
+                        li.className = "p-2 border-bottom cursor-pointer";
+                        li.style.cursor = "pointer";
+                        li.textContent = pred.description;
+                        li.onclick = () => {
+                            document.getElementById("alamatTokoInput").value = pred.description;
+                            suggestionsEl.innerHTML = "";
+                        };
+                        li.onmouseover = () => li.style.backgroundColor = "#f8f9fa";
+                        li.onmouseout = () => li.style.backgroundColor = "";
+                        ul.appendChild(li);
+                    });
+                    suggestionsEl.appendChild(ul);
+                }
+            });
+        }
+
+        function setStoreLocation() {
+            const alamat = document.getElementById("alamatTokoInput").value.trim();
+            if (!alamat) return alert("Alamat toko wajib diisi!");
+
+            geocoder.geocode({
+                address: alamat
+            }, function(results, status) {
+                if (status === "OK") {
+                    const loc = results[0].geometry.location;
+                    const lat = loc.lat();
+                    const lng = loc.lng();
+
+                    if (storeMarker) storeMarker.setMap(null);
+                    storeMarker = new google.maps.Marker({
+                        map,
+                        position: loc,
+                        icon: {
+                            url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                        },
+                        title: "Toko Utama"
+                    });
+
+                    clearStoreCircles();
+
+                    storeCircles.push(new google.maps.Circle({
+                        map,
+                        center: loc,
+                        radius: 5000,
+                        fillColor: '#FF0000',
+                        fillOpacity: 0.2,
+                        strokeColor: '#FF0000',
+                        strokeOpacity: 0.5,
+                        strokeWeight: 2
+                    }));
+
+                    storeCircles.push(new google.maps.Circle({
+                        map,
+                        center: loc,
+                        radius: 10000,
+                        fillColor: '#00FF00',
+                        fillOpacity: 0.1,
+                        strokeColor: '#00AA00',
+                        strokeOpacity: 0.4,
+                        strokeWeight: 2
+                    }));
+
+                    map.setCenter(loc);
+                    map.setZoom(12);
+                } else {
+                    alert("Alamat toko tidak valid.");
+                }
+            });
+        }
+
+        function clearStoreCircles() {
+            storeCircles.forEach(c => c.setMap(null));
+            storeCircles = [];
+        }
+
+        function addToList() {
+            const nama = document.getElementById("namaInput").value.trim();
+            const telp = document.getElementById("telpInput").value.trim();
+            const alamat = document.getElementById("alamatInput").value.trim();
+
+            if (!nama || !telp || !alamat) {
+                alert("Semua kolom customer wajib diisi!");
+                return;
+            }
+
+            // Cek duplikat berdasarkan nama + alamat
+            const alreadyExists = dataList.some(item =>
+                item.nama.toLowerCase() === nama.toLowerCase() &&
+                item.address.toLowerCase() === alamat.toLowerCase()
+            );
+
+            if (alreadyExists) {
+                alert("Customer dengan nama dan alamat yang sama sudah ditambahkan.");
+                return;
+            }
+
+            geocoder.geocode({
+                address: alamat
+            }, function(results, status) {
+                if (status === "OK") {
+                    const location = results[0].geometry.location;
+                    const lat = location.lat();
+                    const lng = location.lng();
+
+                    const item = {
+                        nama,
+                        telp,
+                        address: alamat,
+                        lat,
+                        lng
+                    };
+                    dataList.push(item);
+                    renderDataTable();
+
+                    // Clear form after successful add
+                    document.getElementById("namaInput").value = "";
+                    document.getElementById("telpInput").value = "";
+                    document.getElementById("alamatInput").value = "";
+                } else {
+                    alert("Alamat customer tidak valid.");
+                }
+            });
+        }
+
+        function renderDataTable() {
+            const table = document.getElementById("dataTable");
+            table.innerHTML = "";
+            clearMarkers();
+
+            const bounds = new google.maps.LatLngBounds();
+
+            dataList.forEach((item, i) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td>${item.nama}</td>
+                    <td>${item.telp}</td>
+                    <td class="text-start">${item.address}</td>
+                    <td>${item.lat.toFixed(5)}</td>
+                    <td>${item.lng.toFixed(5)}</td>
+                    <td>
+                        <button onclick="focusMarker(${i})" class="btn btn-sm btn-success">Select</button>
+                    </td>
+                `;
+                table.appendChild(row);
+
+                const marker = new google.maps.Marker({
+                    position: {
+                        lat: item.lat,
+                        lng: item.lng
+                    },
+                    map: map,
+                    label: "👤",
+                    title: item.nama
+                });
+
+                marker.addListener("click", () => {
+                    infoWindow.setContent(`<strong>${item.nama}</strong><br>${item.address}`);
+                    infoWindow.open(map, marker);
+                });
+
+                markers.push(marker);
+                bounds.extend(marker.getPosition());
+            });
+
+            if (dataList.length > 0) {
+                map.fitBounds(bounds);
+            }
+        }
+
+        function focusMarker(index) {
+            const item = dataList[index];
+            const position = new google.maps.LatLng(item.lat, item.lng);
+            map.setCenter(position);
+            map.setZoom(17);
+
+            if (markers[index]) {
+                google.maps.event.trigger(markers[index], "click");
+            }
+        }
+
+        function clearMarkers() {
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // --- Select2 init ---
             $('#filter-store').select2({
@@ -554,5 +876,10 @@
                 });
             }
         });
+    </script>
+
+    <!-- Google Maps API -->
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAxWsTliFhn3XDDCyjOuB4N2DYAwgksfBw&libraries=places&callback=initMap">
     </script>
 @endpush
