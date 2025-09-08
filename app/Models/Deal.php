@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class Deal extends Model
 {
@@ -50,6 +50,8 @@ class Deal extends Model
         'quotation_upload' => 'array',
         'receipt_upload' => 'array',
     ];
+
+    protected $appends = ['expires_at', 'is_expired'];
 
     public function getRouteKeyName()
     {
@@ -126,5 +128,40 @@ class Deal extends Model
     {
         $days = $this->stage_days;
         return $days === null ? null : ($days . ' hari di stage ini');
+    }
+
+    public function getExpiresAtAttribute()
+    {
+        // map stage → grace period (days)
+        $stage = strtolower((string) $this->stage);
+        $daysMap = [
+            'mapping' => 14,
+            'visit' => 14,
+            'quotation' => 30,
+        ];
+
+        if (!isset($daysMap[$stage]) || !$this->created_date) {
+            return null;
+        }
+
+        // created_date + N days (no timezone shift here)
+        return $this->created_date->copy()->addDays($daysMap[$stage]);
+    }
+
+    public function getIsExpiredAttribute()
+    {
+        // won/lost are never “expired”
+        $stage = strtolower((string) $this->stage);
+        if (in_array($stage, ['won', 'lost'], true)) {
+            return false;
+        }
+
+        $expiresAt = $this->expires_at;
+        if (!$expiresAt) {
+            return false;
+        }
+
+        // compare using Asia/Jakarta to match your locale
+        return Carbon::now('Asia/Jakarta')->greaterThan($expiresAt);
     }
 }

@@ -95,6 +95,16 @@
                                 <div class="d-flex justify-content-between align-items-start">
                                     <h3 class="fw-semibold h6 mb-1">{{ $deal->deal_name }}</h3>
 
+                                </div>
+
+                                <div class="d-flex align-items-center">
+                                    @if ($deal->expires_at)
+                                        <span
+                                            class="badge {{ $deal->is_expired ? 'bg-danger' : 'bg-warning text-dark' }} me-2">
+                                            {{ $deal->is_expired ? 'Expired' : 'Expires on: ' . $deal->expires_at->timezone('Asia/Jakarta')->format('d/m/Y') }}
+                                        </span>
+                                    @endif
+
                                     @can('delete-deals')
                                         <form action="{{ route('deals.destroy', $deal) }}" method="POST"
                                             onsubmit="return confirm('Hapus deal ini?');">
@@ -115,6 +125,7 @@
                                 <div class="small text-muted">
                                     Closed at: {{ $deal->closed_date ? $deal->closed_date->format('d/m/Y') : '-' }}
                                 </div>
+
                                 <div class="small text-muted fst-italic">
                                     {{ $deal->stage_days_label ?? '-' }}
                                 </div>
@@ -126,6 +137,7 @@
                 </div>
             </div>
         @endforeach
+
     </main>
 
     {{-- List View --}}
