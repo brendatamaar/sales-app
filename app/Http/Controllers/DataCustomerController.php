@@ -135,6 +135,7 @@ class DataCustomerController extends Controller
             'results' => $query->map(function ($cust) {
                 return [
                     'id' => $cust->id_cust,
+                    'name' => $cust->cust_name,
                     'text' => $cust->cust_name . ' (' . ($cust->no_telp_cust ?? '-') . ')',
                     'address' => $cust->cust_address,
                     'phone' => $cust->no_telp_cust,

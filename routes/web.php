@@ -53,7 +53,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/deals/{id}', [DealController::class, 'getDeal'])->name('deals.api.show');
     Route::patch('/deals/{id}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
-
+    Route::post('/deals/{deal}/quotation/generate', [DealController::class, 'generateQuotation'])
+        ->name('deals.quotation.generate');
 
     Route::resource('customers', DataCustomerController::class);
     Route::resource('salpers', SalperController::class);

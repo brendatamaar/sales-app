@@ -11,7 +11,7 @@ class CreateDealsTable extends Migration
         Schema::create('deals', function (Blueprint $table) {
             $table->string('deals_id', 64)->primary();
             $table->string('deal_name');
-            $table->string('stage')->nullable();                 // keep current stage here
+            $table->string('stage')->nullable();
             $table->decimal('deal_size', 15, 2)->nullable();
             $table->date('created_date')->nullable();
             $table->date('closed_date')->nullable();
@@ -31,9 +31,9 @@ class CreateDealsTable extends Migration
 
             $table->text('payment_term')->nullable();
             $table->date('quotation_exp_date')->nullable();
-
-            // keep generic artifacts; remove stage-specific owner fields
             $table->json('quotation_upload')->nullable();
+
+            $table->string('status_approval_harga')->nullable();
             $table->string('receipt_number')->nullable();
             $table->json('receipt_upload')->nullable();
 

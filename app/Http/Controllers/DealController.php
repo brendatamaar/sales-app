@@ -21,6 +21,7 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use Illuminate\Support\Carbon;
 use App\Services\QuotationExporter;
+use Illuminate\Validation\ValidationException;
 
 class DealController extends Controller
 {
@@ -281,7 +282,7 @@ class DealController extends Controller
     private function generateUniqueDealsId()
     {
         do {
-            $id = 'HTX' . strtoupper(Str::random(6));
+            $id = strtoupper(Str::random(9));
         } while (Deal::where('deals_id', $id)->exists());
         return $id;
     }
@@ -401,6 +402,10 @@ class DealController extends Controller
             return redirect()->route('deals.show', $updatedDeal->deals_id)
                 ->with('success', 'Deal berhasil diupdate');
 
+        } catch (ValidationException $e) {
+            return $request->ajax()
+                ? response()->json(['ok' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422)
+                : back()->withInput()->withErrors($e->errors());
         } catch (Exception $e) {
             Log::error('Deal update failed', ['deals_id' => $id, 'error' => $e->getMessage()]);
             return $request->ajax()
@@ -413,45 +418,59 @@ class DealController extends Controller
     private function validateUpdateRequest(Request $request, Deal $deal)
     {
         return $request->validate([
-            'deals_id' => ['nullable', 'string', 'max:64', 'regex:/^[A-Z0-9]+$/', Rule::unique('deals', 'deals_id')->ignore($deal->deals_id, 'deals_id')],
-            'deal_name' => ['required', 'string', 'max:255', 'min:3'],
-            'stage' => ['nullable', 'string', Rule::in(self::ALLOWED_STAGES)],
-            'deal_size' => ['nullable', 'numeric', 'min:0', 'max:999999999999.99'],
-            'created_date' => ['nullable', 'date', 'before_or_equal:today'],
-            'closed_date' => ['nullable', 'date', 'after_or_equal:created_date'],
+            // IDs
+            'deals_id' => ['sometimes', 'string', 'max:64', 'regex:/^[A-Z0-9]+$/', Rule::unique('deals', 'deals_id')->ignore($deal->deals_id, 'deals_id')],
+
+            // Core (note: sometimes + required ensures only validates when present)
+            'deal_name' => ['sometimes', 'required', 'string', 'max:255', 'min:3'],
+            'stage' => ['sometimes', 'string', Rule::in(self::ALLOWED_STAGES)],
+            'deal_size' => ['sometimes', 'numeric', 'min:0', 'max:999999999999.99'],
+            'created_date' => ['sometimes', 'date', 'before_or_equal:today'],
+            'closed_date' => ['sometimes', 'date', 'after_or_equal:created_date'],
 
             // Store
-            'store_id' => ['nullable', 'string', 'max:100'],
-            'store_name' => ['nullable', 'string', 'max:255'],
-            'no_rek_store' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'store_id' => ['sometimes', 'string', 'max:100'],
+            'store_name' => ['sometimes', 'string', 'max:255'],
+            'no_rek_store' => ['sometimes', 'string', 'max:255'],
 
             // Customer
-            'alamat_lengkap' => ['nullable', 'string', 'max:1000'],
-            'cust_name' => ['nullable', 'string', 'max:255'],
-            'no_telp_cust' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]+$/'],
-            'id_cust' => ['nullable', 'integer'],
+            'alamat_lengkap' => ['sometimes', 'string', 'max:1000'],
+            'cust_name' => ['sometimes', 'string', 'max:255'],
+            'no_telp_cust' => ['sometimes', 'string', 'max:20', 'regex:/^[0-9+\-\s()]+$/'],
+            'id_cust' => ['sometimes', 'integer'],
 
             // Payment & quotation
-            'payment_term' => ['nullable', 'string', 'max:1000'],
-            'quotation_exp_date' => ['nullable', 'date', 'after:today'],
+            // 'payment_term' => ['sometimes', 'string', 'max:1000'],
+            // 'quotation_exp_date' => ['sometimes', 'date', 'after:today'],
+
+            // ✅ Approval harga khusus
+            'status_approval_harga' => [
+                'sometimes',
+                'string',
+                'max:255',
+                Rule::in([
+                    'REQUEST_HARGA_KHUSUS',
+                    'APPROVED_HARGA_KHUSUS',
+                    'NOT_APPROVED_HARGA_KHUSUS',
+                ])
+            ],
 
             // Items
-            'items' => ['nullable', 'array', 'max:50'],
-            'items.*.item_no' => ['nullable', 'integer', 'exists:items,item_no'],
-            'items.*.quantity' => ['nullable', 'integer', 'min:1'],
-            'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
-            'items.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'items.*.notes' => ['nullable', 'string', 'max:500'],
+            'items' => ['sometimes', 'array', 'max:50'],
+            'items.*.item_no' => ['sometimes', 'integer', 'exists:items,item_no'],
+            'items.*.quantity' => ['sometimes', 'integer', 'min:1'],
+            'items.*.unit_price' => ['sometimes', 'numeric', 'min:0'],
+            'items.*.discount_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'items.*.notes' => ['sometimes', 'string', 'max:500'],
 
             // Receipt & lost
-            'receipt_number' => ['nullable', 'string', 'max:255'],
-            'lost_reason' => ['nullable', 'string', 'max:1000'],
+            // 'receipt_number' => ['sometimes', 'string', 'max:255'],
+            // 'lost_reason' => ['sometimes', 'string', 'max:1000'],
 
             // Files
-            'photo_upload.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif', 'max:5120'],
-            'quotation_upload.*' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
-            'receipt_upload.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'photo_upload.*' => ['sometimes', 'file', 'mimes:jpg,jpeg,png,gif', 'max:5120'],
+            'quotation_upload.*' => ['sometimes', 'file', 'mimes:pdf,xlsx,xls,doc,docx', 'max:10240'],
+            'receipt_upload.*' => ['sometimes', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ]);
     }
 
@@ -625,6 +644,7 @@ class DealController extends Controller
                     // Payment & quotation
                     'payment_term' => $deal->payment_term,
                     'quotation_exp_date' => $deal->quotation_exp_date ? $deal->quotation_exp_date->format('Y-m-d') : null,
+                    'status_approval_harga' => $deal->status_approval_harga,
 
                     // Receipt / Lost
                     'receipt_number' => $deal->receipt_number,
@@ -654,6 +674,21 @@ class DealController extends Controller
             return response()->json(['ok' => false, 'message' => 'Deal not found: ' . $e->getMessage()], 404);
         }
     }
+    public function generateQuotation(Request $request, Deal $deal)
+    {
+        // Eager-load the item data used in the exporter
+        $deal->loadMissing('dealItems.item');
+        $deal->loadMissing('items');
+
+        try {
+            $result = app(QuotationExporter::class)->export($deal);
+            return response()->json(['ok' => true, 'url' => $result['url'], 'path' => $result['path']]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['ok' => false, 'message' => 'Gagal generate quotation: ' . $e->getMessage()], 500);
+        }
+    }
+
 
     /**
      * Get salper IDs for a target stage from request.

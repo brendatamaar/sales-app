@@ -256,13 +256,13 @@
                                     <input type="number" class="form-control bg-light" id="dealSize" name="deal_size"
                                         min="0" step="1000" readonly aria-readonly="true"
                                         title="Deal size dihitung otomatis dari total semua item">
-                                    <div class="form-text">Otomatis = (Qty × Harga) semua item</div>
+                                    <div class="form-text">Deals Size akan digenerate otomatis</div>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="createdDate" class="form-label">Tanggal Dibuat <span
                                             class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="createdDate" name="created_date"
-                                        required>
+                                        readonly aria-readonly="true">
                                 </div>
                                 <div class="col-md-4">
                                     <label for="endDate" class="form-label">Tanggal Berakhir</label>
@@ -315,6 +315,7 @@
                                             class="text-danger">*</span></label>
                                     <select id="customerSelect" class="form-select"></select>
                                     <input type="hidden" name="id_cust" id="id_cust">
+                                    <input type="hidden" name="cust_name" id="cust_name">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="customerPhone" class="form-label">No Telp Customer</label>
@@ -434,14 +435,58 @@
                             </button>
                         </fieldset>
 
+
+                        {{-- Approval Harga Khusus (VISIT+) --}}
+                        <fieldset class="form-section mb-4 stage-conditional" id="approvalHargaSection"
+                            data-stages="visit,quotation,visit">
+                            <legend class="h6">
+                                <i class="fas fa-stamp me-2" aria-hidden="true"></i> Approval Harga Khusus
+                            </legend>
+
+                            {{-- current status badge --}}
+                            <div class="mb-2">
+                                <span id="statusApprovalHargaBadge" class="badge bg-secondary">Belum ada permintaan</span>
+                                <input type="hidden" name="status_approval_harga" id="status_approval_harga"
+                                    value="">
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-12 d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-primary" id="btnRequestApprovalManager"
+                                        data-level="manager">
+                                        <i class="fas fa-paper-plane me-1"></i> Minta Approval Manager
+                                    </button>
+
+                                    <button type="button" class="btn btn-warning" id="btnRequestApprovalRegionalManager"
+                                        data-level="regional_manager">
+                                        <i class="fas fa-paper-plane me-1"></i> Minta Approval Regional Manager
+                                    </button>
+                                </div>
+                            </div>
+                        </fieldset>
+
+
                         {{-- Quotation Upload (QUOTATION+) --}}
                         <fieldset class="form-section mb-4 stage-conditional" id="quotationUploadSection"
                             data-stages="quotation,won,lost">
-                            <legend class="h6"><i class="fas fa-file-contract me-2" aria-hidden="true"></i> Quotation
-                                Upload</legend>
+                            <legend class="h6">
+                                <i class="fas fa-file-contract me-2" aria-hidden="true"></i> Quotation Upload
+                            </legend>
 
-                            <button type="button" class="btn btn-success btn-sm mt-2" id="generateQuotationBtn">Generate
-                                Quotation</button>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-success btn-sm" id="generateQuotationBtn">
+                                    Generate Quotation
+                                </button>
+
+                            </div>
+
+                            <div class="mt-2">
+                                <div class="form-group">
+                                    <input type="file" class="form-control" id="quotationUpload"
+                                        name="quotation_upload[]" accept=".xlsx,.xls,.pdf,image/*">
+                                    <div class="form-text">Format: XLSX. Maksimal 5MB per file</div>
+                                </div>
+                            </div>
                         </fieldset>
 
                         {{-- Receipt (WON) --}}
@@ -469,10 +514,10 @@
                             <div class="form-group">
                                 <label for="stageSelect" class="form-label">Alasan
                                     Gagal <span class="text-danger">*</span></label>
-                                <select class="form-select" id="failureReason" name="lost_reason" required
+                                <select class="form-select" id="failureReason" name="lost_reason"
                                     aria-describedby="failureHelp">
-                                    <option value="">Pilih Alasan</option>
-                                    <option value="Bad Timing" selected>Bad Timing</option>
+                                    <option value="" selected>Pilih Alasan</option>
+                                    <option value="Bad Timing">Bad Timing</option>
                                     <option value="Tidak ada response">Tidak ada response</option>
                                     <option value="Tidak tertarik">Tidak tertarik</option>
                                     <option value="Memilih kompetitor">Memilih kompetitor</option>
@@ -616,6 +661,23 @@
 
                 document.getElementById('dealSearchInput')?.addEventListener('input', (e) => this.handleSearch(e.target
                     .value));
+
+                document.getElementById('btnRequestApprovalManager')?.addEventListener('click', () =>
+                    this.requestHargaKhusus()
+                );
+                document.getElementById('btnRequestApprovalRegionalManager')?.addEventListener('click', () =>
+                    this.requestHargaKhusus()
+                );
+
+                document.getElementById('btnApproveHargaKhusus')?.addEventListener('click', () => {
+                    this.updateHargaKhususStatus('APPROVED_HARGA_KHUSUS', 'Disetujui (Harga Khusus)',
+                        'bg-success');
+                });
+                document.getElementById('btnRejectHargaKhusus')?.addEventListener('click', () => {
+                    this.updateHargaKhususStatus('NOT_APPROVED_HARGA_KHUSUS', 'Tidak Disetujui (Harga Khusus)',
+                        'bg-danger');
+                });
+
             }
 
             // ===== CREATE FLOW =====
@@ -909,6 +971,8 @@
                     // Hidden & text fields
                     const idCustEl = document.getElementById('id_cust');
                     if (idCustEl) idCustEl.value = id || '';
+                    const nameCustEl = document.getElementById('cust_name');
+                    if (nameCustEl) nameCustEl.value = name || '';
                     const custPhoneEl = document.getElementById('customerPhone');
                     if (custPhoneEl) custPhoneEl.value = phone || '';
                     const custAddrEl = document.getElementById('customerAddress');
@@ -919,10 +983,8 @@
                         const $ = window.jQuery;
                         const $cust = $('#customerSelect');
                         if ($cust.length) {
-                            // Clear existing selection
                             $cust.val(null).trigger('change');
 
-                            // If we have id+name, inject as an option and select it
                             if (id && name) {
                                 const opt = new Option(String(name), String(id), true, true);
                                 $cust.append(opt).trigger('change');
@@ -937,6 +999,11 @@
 
                 const quotationExp = document.getElementById('quotationExpiredDate');
                 if (quotationExp) quotationExp.value = dealData.quotation_exp_date || '';
+
+                const statusApprovalHarga = document.getElementById('status_approval_harga');
+                if (statusApprovalHarga) statusApprovalHarga.value = dealData.status_approval_harga || '';
+
+                this.setHargaApprovalLocal(dealData.status_approval_harga, dealData.status_approval_harga, 'bg-primary')
 
                 // Receipt info
                 const receiptNumber = document.getElementById('receiptNumber');
@@ -957,7 +1024,7 @@
                     $select.trigger('change');
                 }
 
-                // Populate items if any
+                // Populate items
                 if (dealData.items && dealData.items.length > 0) {
                     this.populateItemsFromDealData(dealData.items);
                 }
@@ -977,10 +1044,8 @@
                 items.forEach((item, index) => {
                     let targetRow;
                     if (index === 0) {
-                        // Use the default first row
                         targetRow = container.querySelector('.item-row[data-item="0"]');
                     } else {
-                        // Add new row for additional items
                         this.addItemRow();
                         targetRow = container.querySelector(`.item-row[data-item="${index}"]`);
                     }
@@ -988,14 +1053,12 @@
                     if (targetRow && window.jQuery) {
                         const $ = window.jQuery;
 
-                        // Set item selection
                         const $itemSelect = $(targetRow).find('select.item-select');
                         if ($itemSelect.length) {
                             const option = new Option(item.item_name, item.item_no, true, true);
                             $itemSelect.append(option).trigger('change');
                         }
 
-                        // Set quantities and prices
                         const qtyInput = targetRow.querySelector('input[name*="[qty]"]');
                         if (qtyInput) qtyInput.value = item.quantity || '';
 
@@ -1005,7 +1068,6 @@
                         const discInput = targetRow.querySelector('input.item-disc');
                         if (discInput) discInput.value = item.discount_percent || '';
 
-                        // Recalculate total
                         this.calculateItemTotal(targetRow);
                     }
                 });
@@ -1034,11 +1096,23 @@
                     return;
                 }
 
+                const formData = new FormData(form);
+                this.mapFirstItemToLegacyFields(formData);
+
+                const stage = String(formData.get('stage') || '').toLowerCase();
+                const statusApproval = String(formData.get('status_approval_harga') || '').trim();
+
+                if (stage === 'visit' && !statusApproval) {
+                    alert('Silakan ajukan harga khusus terlebih dahulu.');
+                    return;
+                }
+
+                if (stage === 'quotation' && statusApproval == "REQUEST_HARGA_KHUSUS") {
+                    alert('Request harga khusus di deals ini belum diapprove!');
+                    return;
+                }
                 this.showLoading(true);
                 try {
-                    const formData = new FormData(form);
-                    this.mapFirstItemToLegacyFields(formData);
-
                     const response = await fetch(form.action, {
                         method: 'POST',
                         headers: {
@@ -1142,6 +1216,22 @@
                 if (card && fromBody) this.revertCardMove(card, fromBody, oldIndex);
                 this.pendingUpdate = null;
                 this.mode = 'create';
+            }
+
+            async requestHargaKhusus() {
+                const VALUE = 'REQUEST_HARGA_KHUSUS';
+                const LABEL = 'Menunggu Approval (Harga Khusus)';
+                const BADGE = 'bg-info';
+
+                const hidden = document.getElementById('status_approval_harga');
+
+                if (hidden.value == 'REQUEST_HARGA_KHUSUS') {
+                    alert("Anda sudah mengajukan request harga khusus.");
+                    return;
+                }
+
+                this.setHargaApprovalLocal(VALUE, LABEL, BADGE);
+
             }
 
             // ===== STAGE MANAGEMENT =====
@@ -1286,11 +1376,10 @@
                 if (dealsIdHidden) dealsIdHidden.value = id;
             }
             createRandomId() {
-                const prefix = 'HTX';
                 const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
                 let result = '';
-                for (let i = 0; i < 6; i++) result += chars[Math.floor(Math.random() * chars.length)];
-                return prefix + result;
+                for (let i = 0; i < 9; i++) result += chars[Math.floor(Math.random() * chars.length)];
+                return result;
             }
             setTodayDate() {
                 const dateInput = document.getElementById('createdDate');
@@ -1399,12 +1488,14 @@
                 $select.on('select2:select', (e) => {
                     const d = e.params.data || {};
                     $('#id_cust').val(d.id || '');
+                    $('#cust_name').val(d.name || '');
                     $('#customerPhone').val(d.phone || '');
                     $('#customerAddress').val(d.address || '');
                 });
 
                 $select.on('select2:clear', () => {
                     $('#id_cust').val('');
+                    $('#cust_name').val('');
                     $('#customerPhone').val('');
                     $('#customerAddress').val('');
                 });
@@ -1437,15 +1528,14 @@
                         data: params => ({
                             q: params.term || ''
                         }),
-                        processResults: data => data, // expect { results: [{id,text}, ...] }
+                        processResults: data => data,
                         cache: true,
                     },
                     minimumInputLength: 0,
                     width: '100%',
-                    multiple: true, // << make it multi
+                    multiple: true,
                 });
 
-                // OPTIONAL: If you still want to mirror the "first" selected salper into legacy fields:
                 $select.on('change', () => {
                     const selected = $select.select2('data') || [];
                     const first = selected[0] || {};
@@ -1453,7 +1543,6 @@
                     $('#sales_name').val(first.text || '');
                 });
 
-                // Auto-trigger initial search on open
                 $select.on('select2:open', () => {
                     const $search = $('.select2-container--open .select2-search__field');
                     if ($search.val() === '') $search.trigger('input');
@@ -1511,7 +1600,6 @@
                     const d = e.params.data || {};
                     const $row = $(rowEl);
 
-                    // write legacy + visible fields
                     $row.find('input.legacy-item-code').val(d.id || '');
                     $row.find('input.legacy-item-name').val(d.item_name || '');
                     $row.find('input.item-uom').val(d.uom || '');
@@ -1520,7 +1608,6 @@
                     const afterDisc = this.computeDiscountedPrice(d.price, d.disc);
                     $row.find('input[name*="[discountedPrice]"]').val(afterDisc);
 
-                    // recalc
                     this.calculateItemTotal(rowEl);
                     this.updateDealSizeFromItems();
                 });
@@ -1668,6 +1755,22 @@
                     window.location.reload();
                 }
             }
+
+
+
+            // ===== HELPER FUNCTION =====
+            setHargaApprovalLocal(value, label, badgeClass) {
+                const hidden = document.getElementById('status_approval_harga');
+                const badge = document.getElementById('statusApprovalHargaBadge');
+
+                if (hidden) {
+                    hidden.value = value || '';
+                }
+                if (badge) {
+                    badge.className = `badge ${badgeClass || 'bg-secondary'}`;
+                    badge.textContent = label || 'Belum ada permintaan';
+                }
+            }
         }
 
         // ===== INITIALIZE APPLICATION =====
@@ -1690,8 +1793,31 @@
             document.getElementById('listViewBtn')?.classList.remove('active');
             this.classList.add('active');
         });
-    </script>
+        document.getElementById('generateQuotationBtn')?.addEventListener('click', async () => {
+            const dealsId = document.getElementById('deals_id')?.value || document.getElementById('dealId')
+                ?.value;
+            if (!dealsId) return alert('Deals ID tidak ditemukan.');
 
-    <style>
-    </style>
+            const url = `/deals/${encodeURIComponent(dealsId)}/quotation/generate`;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                            'content') || ''
+                    }
+                });
+                const data = await res.json();
+                if (!data.ok) throw new Error(data.message || 'Gagal generate quotation');
+
+                window.open(data.url, '_blank');
+
+            } catch (err) {
+                console.error(err);
+                alert('Gagal generate quotation: ' + err.message);
+            }
+        });
+    </script>
 @endpush

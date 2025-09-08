@@ -33,6 +33,7 @@ class Deal extends Model
         'cust_name',
         'no_telp_cust',
         'payment_term',
+        'status_approval_harga',
         'quotation_exp_date',
         'quotation_upload',
         'receipt_number',

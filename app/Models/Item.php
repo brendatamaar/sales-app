@@ -13,6 +13,7 @@ class Item extends Model
     protected $primaryKey = 'item_no';
 
     protected $fillable = [
+        'item_code',
         'item_name',
         'category',
         'uom',
