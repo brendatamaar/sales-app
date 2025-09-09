@@ -52,10 +52,20 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/users/search', [UserController::class, 'search'])->name('users.search');
 
+    Route::post('/deals/{id}/harga-approval/approve', [DealController::class, 'approveHargaKhusus'])
+        ->name('deals.harga_approve');
+
+    Route::post('/deals/{id}/harga-approval/reject', [DealController::class, 'rejectHargaKhusus'])
+        ->name('deals.harga_reject');
+
+    Route::get('/deals/expired', [DealController::class, 'expired'])->name('deals.expired');
+    Route::get('/deals/need-harga-approval', [DealController::class, 'needHargaApproval'])->name('deals.need-harga-approval');
     Route::get('/deals/{id}', [DealController::class, 'getDeal'])->name('deals.api.show');
     Route::patch('/deals/{id}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
     Route::post('/deals/{deal}/quotation/generate', [DealController::class, 'generateQuotation'])
         ->name('deals.quotation.generate');
+    Route::post('/deals/{id}/expire-to-lost', [DealController::class, 'expireToLost'])
+        ->name('deals.expire_to_lost');
 
     Route::get('/deal-reports', [DealReportController::class, 'index'])->name('deal-reports.index');
     Route::get('/deal-reports/{dealsId}', [DealReportController::class, 'show'])->name('deal-reports.show');

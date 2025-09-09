@@ -139,7 +139,27 @@ class DealController extends Controller
         ]);
     }
 
-    // In App\Http\Controllers\DealController.php
+    public function expired(Request $request)
+    {
+        $all = Deal::orderBy('created_date', 'desc')->get();
+
+        // Use your accessor `is_expired` to filter in PHP
+        $deals = $all->filter(function ($deal) {
+            return (bool) data_get($deal, 'is_expired', false);
+        })->values();
+
+        return view('deals.expired', compact('deals'));
+    }
+
+
+    public function needHargaApproval(Request $request)
+    {
+        $deals = Deal::needHargaApproval()
+            ->orderBy('created_date', 'desc')
+            ->get();
+
+        return view('deals.need_harga_approval', compact('deals'));
+    }
 
     /**
      * Build Kanban data (grouped deals + counts) honoring search, stage, and filters.
@@ -904,5 +924,56 @@ class DealController extends Controller
             array_filter((array) $ids)
         )));
         return array_filter($ids, fn($v) => $v > 0);
+    }
+
+    public function expireToLost(Request $request, $id)
+    {
+        $deal = Deal::findOrFail($id);
+
+        if (strtolower($deal->stage) === 'lost') {
+            return back()->with('info', "Deal {$deal->deals_id} is already LOST.");
+        }
+        if (!data_get($deal, 'is_expired', false)) {
+            return back()->with('error', "Deal {$deal->deals_id} is not expired.");
+        }
+
+        DB::transaction(function () use ($deal) {
+            $deal->stage = 'lost';
+            if (isset($deal->closed_date)) {
+                $deal->closed_date = date('Y-m-d');
+            }
+            $deal->save();
+        });
+
+        return back()->with('success', "Deal {$deal->deals_id} marked as LOST.");
+    }
+
+    public function approveHargaKhusus(Request $request, $id)
+    {
+        $deal = Deal::findOrFail($id);
+
+        // Optional guard: only from REQUEST_HARGA_KHUSUS
+        // if ($deal->status_approval_harga !== 'REQUEST_HARGA_KHUSUS') {
+        //     return back()->with('error', "Deal {$deal->deals_id} is not awaiting approval.");
+        // }
+
+        DB::transaction(function () use ($deal) {
+            $deal->status_approval_harga = 'APPROVED_HARGA_KHUSUS';
+            $deal->save();
+        });
+
+        return back()->with('success', "Deal {$deal->deals_id} approved (Harga Khusus).");
+    }
+
+    public function rejectHargaKhusus(Request $request, $id)
+    {
+        $deal = Deal::findOrFail($id);
+
+        DB::transaction(function () use ($deal) {
+            $deal->status_approval_harga = 'NOT_APPROVED_HARGA_KHUSUS';
+            $deal->save();
+        });
+
+        return back()->with('success', "Deal {$deal->deals_id} rejected (Harga Khusus).");
     }
 }

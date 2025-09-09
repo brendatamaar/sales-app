@@ -160,6 +160,14 @@ class Deal extends Model
         return $q;
     }
 
+    /**
+     * Deals that are waiting for "harga khusus" approval.
+     * Expecting status_approval_harga = REQUEST_HARGA_KHUSUS
+     */
+    public function scopeNeedHargaApproval($q)
+    {
+        return $q->where('status_approval_harga', 'REQUEST_HARGA_KHUSUS');
+    }
     public function getStageDaysAttribute()
     {
         $start = $this->created_date ?: $this->created_at;

@@ -122,11 +122,13 @@
 
 
         <div class="action-left d-flex align-items-center gap-2">
-            <select class="form-select" style="width:120px" id="itemsPerPage" aria-label="Items per page">
-                <option value="25" selected>Show 25</option>
-                <option value="50">Show 50</option>
-                <option value="100">Show 100</option>
-            </select>
+            <a href="{{ route('deals.expired') }}" class="btn btn-danger btn-sm">
+                <i class="fas fa-hourglass-end"></i> Expired Deals
+            </a>
+
+            <a href="{{ route('deals.need-harga-approval') }}" class="btn btn-warning btn-sm">
+                <i class="fas fa-clipboard-check"></i> Approval Harga Khusus
+            </a>
         </div>
 
         <div class="action-right d-flex align-items-center gap-2">

@@ -14,6 +14,12 @@
       </div>
 
       <div class="form-group">
+        <label>Store Address <span class="text-danger">*</span></label>
+        <input type="text" name="store_address" class="form-control @error('store_address') is-invalid @enderror" value="{{ old('store_address') }}" required>
+        @error('store_address')<div class="invalid-feedback">{{ $message }}</div>@enderror
+      </div>
+
+      <div class="form-group">
         <label>Region</label>
         <input type="text" name="region" class="form-control @error('region') is-invalid @enderror" value="{{ old('region') }}">
         @error('region')<div class="invalid-feedback">{{ $message }}</div>@enderror
