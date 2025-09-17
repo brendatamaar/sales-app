@@ -290,6 +290,14 @@
             padding: 10px;
         }
 
+        .input-group .btn-outline-primary {
+            border-left: 0;
+        }
+
+        #customerSelect {
+            border-right: 0;
+        }
+
         /* Drag Visuals */
         .kanban-card.sortable-chosen {
             opacity: 0.7;
@@ -399,6 +407,15 @@
         .kanban-card .btn-sm {
             padding: 0.25rem 0.5rem;
             font-size: 0.75rem;
+        }
+
+        .kanban-sub {
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .kanban-sub small {
+            color: #28a745;
+            font-size: 0.85rem;
         }
 
         #loadingSpinner {

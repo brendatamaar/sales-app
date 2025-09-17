@@ -173,14 +173,23 @@
         @endphp
 
         @foreach ($stageConfig as $stageKey => $config)
+            @php
+                $stageDeals =
+                    $dealsByStage[$stageKey] ??
+                    ($dealsByStage[strtoupper($stageKey)] ?? ($dealsByStage[ucfirst($stageKey)] ?? []));
+                $stageTotal = collect($stageDeals)->sum('deal_size');
+            @endphp
+
             <div class="kanban-col border rounded" data-stage="{{ $stageKey }}">
                 <div class="kanban-head p-2 fw-semibold {{ $config['color'] }} text-white rounded-top">
                     {{ $config['label'] }}
                 </div>
                 <div class="kanban-sub px-2 pb-2 text-muted bg-light">
-                    <span class="count">{{ $counts[$stageKey] ?? 0 }}</span> deals
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><span class="count">{{ $counts[$stageKey] ?? 0 }}</span> deals</span>
+                        <small class="fw-bold">Rp {{ number_format($stageTotal, 0, ',', '.') }}</small>
+                    </div>
                 </div>
-
                 <div class="kanban-body p-2 min-h-200" style="min-height: 200px;">
                     @php
                         $list =
@@ -450,12 +459,22 @@
 
                         {{-- Customer Information --}}
                         <fieldset class="form-section mb-4" id="customerInfoSection">
-                            <legend class="h6"><i class="fas fa-user me-2"></i> Informasi Customer</legend>
+                            <legend class="h6">
+                                <i class="fas fa-user me-2"></i> Informasi Customer
+                            </legend>
                             <div class="row g-3">
+                                <div class="col-md-12">
+                                    <a href="{{ route('customers.create') }}" class="btn btn-success btn-sm">
+                                        <i class="fa fa-plus-circle"></i> Add New Customer
+                                    </a>
+                                </div>
                                 <div class="col-md-6">
                                     <label for="customerSelect" class="form-label">Customer <span
                                             class="text-danger">*</span></label>
-                                    <select id="customerSelect" class="form-select"></select>
+                                    <div class="input-group">
+                                        <select id="customerSelect" class="form-select"></select>
+
+                                    </div>
                                     <input type="hidden" name="id_cust" id="id_cust">
                                     <input type="hidden" name="cust_name" id="cust_name">
                                 </div>
@@ -522,45 +541,48 @@
                                 <div class="item-row card mb-3" data-item="0">
                                     <div class="card-body">
                                         <div class="row g-3">
-                                            <div class="col-md-5">
+                                            <div class="col-md-4">
                                                 <label class="form-label">Pilih Item</label>
                                                 <select class="form-select item-select" name="items[0][itemSelect]"
                                                     data-index="0"></select>
-                                                {{-- legacy hidden fields for your mapper --}}
                                                 <input type="hidden" name="items[0][itemCode]" class="legacy-item-code">
                                                 <input type="hidden" name="items[0][itemName]" class="legacy-item-name">
                                             </div>
 
-                                            <div class="col-md-2">
+                                            <div class="col-md-1">
                                                 <label class="form-label">UoM</label>
                                                 <input type="text" class="form-control item-uom" name="items[0][uom]"
                                                     readonly tabindex="-1">
                                             </div>
 
                                             <div class="col-md-2">
+                                                <label class="form-label">Harga</label>
+                                                <input type="number" class="form-control item-price bg-light"
+                                                    name="items[0][price]" readonly tabindex="-1">
+                                            </div>
+
+                                            <div class="col-md-1">
                                                 <label class="form-label">Qty</label>
-                                                <input type="number" class="form-control" name="items[0][qty]"
+                                                <input type="number" class="form-control item-qty" name="items[0][qty]"
                                                     min="1">
                                             </div>
 
                                             <div class="col-md-1">
                                                 <label class="form-label">Disc %</label>
                                                 <input type="number" class="form-control item-disc"
-                                                    name="items[0][disc]" min="0" max="100" step="0.01"
-                                                    readonly tabindex="-1">
+                                                    name="items[0][disc]" min="0" max="100" step="0.01">
                                             </div>
 
                                             <div class="col-md-2">
                                                 <label class="form-label">Harga (after disc)</label>
-                                                <input type="number" class="form-control"
-                                                    name="items[0][discountedPrice]" min="0" step="0.01"
-                                                    readonly tabindex="-1">
+                                                <input type="number" class="form-control item-discounted-price"
+                                                    name="items[0][discountedPrice]" min="0" step="0.01">
                                             </div>
 
                                             <div class="col-md-2">
                                                 <label class="form-label">Total</label>
-                                                <input type="text" class="form-control" name="items[0][totalPrice]"
-                                                    readonly tabindex="-1">
+                                                <input type="text" class="form-control item-total bg-light"
+                                                    name="items[0][totalPrice]" readonly tabindex="-1">
                                             </div>
                                         </div>
 
@@ -1186,6 +1208,7 @@
                 this.resetForm();
                 this.generateDealId();
                 this.setTodayDate();
+                this.setDefaultEmail();
                 this.handleStageChange('MAPPING');
 
                 const form = document.getElementById('dealForm');
@@ -1766,14 +1789,21 @@
                             $itemSelect.append(option).trigger('change');
                         }
 
-                        const qtyInput = targetRow.querySelector('input[name*="[qty]"]');
+                        // Set qty
+                        const qtyInput = targetRow.querySelector('.item-qty');
                         if (qtyInput) qtyInput.value = item.quantity || '';
 
-                        const unitPriceInput = targetRow.querySelector('input[name*="[discountedPrice]"]');
-                        if (unitPriceInput) unitPriceInput.value = item.unit_price || '';
+                        // Set price (readonly)
+                        const priceInput = targetRow.querySelector('.item-price');
+                        if (priceInput) priceInput.value = item.price || item.unit_price || '';
 
-                        const discInput = targetRow.querySelector('input.item-disc');
+                        // Set discount
+                        const discInput = targetRow.querySelector('.item-disc');
                         if (discInput) discInput.value = item.discount_percent || '';
+
+                        // Set discounted price
+                        const discountedPriceInput = targetRow.querySelector('.item-discounted-price');
+                        if (discountedPriceInput) discountedPriceInput.value = item.unit_price || '';
 
                         this.calculateItemTotal(targetRow);
                     }
@@ -1786,6 +1816,27 @@
                 const form = document.getElementById('dealForm');
                 if (!form) return;
                 form.classList.add('needs-validation');
+            }
+
+            updateStageTotal(column) {
+                if (!column) return;
+
+                const cards = column.querySelectorAll('.kanban-card');
+                let total = 0;
+
+                cards.forEach(card => {
+                    const dealSizeText = card.querySelector('.small.text-muted')?.textContent || '';
+                    const match = dealSizeText.match(/Rp\s*([\d.,]+)/);
+                    if (match) {
+                        const value = parseFloat(match[1].replace(/\./g, '').replace(',', '.')) || 0;
+                        total += value;
+                    }
+                });
+
+                const totalElement = column.querySelector('.kanban-sub small');
+                if (totalElement) {
+                    totalElement.textContent = `Rp ${this.formatCurrency(total)}`;
+                }
             }
 
             async handleFormSubmit(e) {
@@ -1892,6 +1943,11 @@
 
                 this.addCardToKanban(result.deal, result.redirect);
                 this.updateTotalCount(1);
+
+                // Update stage total
+                const column = document.querySelector(`[data-stage="${result.deal.stage}"]`);
+                this.updateStageTotal(column);
+
                 this.showSuccess('Deal berhasil disimpan');
             }
 
@@ -1902,8 +1958,14 @@
                     toColumn,
                     toStage
                 } = this.pendingUpdate;
+
                 this.updateStageCount(fromColumn, -1);
                 this.updateStageCount(toColumn, 1);
+
+                // Update totals for both stages
+                this.updateStageTotal(fromColumn);
+                this.updateStageTotal(toColumn);
+
                 card.dataset.stage = toStage;
 
                 const modal = bootstrap.Modal.getInstance(document.getElementById('dealModal'));
@@ -2030,24 +2092,82 @@
 
                 container.addEventListener('input', (e) => {
                     const target = e.target;
-                    if (!target.matches('input[name*="[qty]"], input[name*="[discountedPrice]"]')) return;
-                    this.calculateItemTotal(target.closest('.item-row'));
-                    this.updateDealSizeFromItems();
+                    const row = target.closest('.item-row');
+                    if (!row) return;
+
+                    // Handle quantity change
+                    if (target.classList.contains('item-qty')) {
+                        this.calculateItemTotal(row);
+                        this.updateDealSizeFromItems();
+                    }
+
+                    // Handle discount percentage change
+                    else if (target.classList.contains('item-disc')) {
+                        this.updateDiscountedPrice(row);
+                        this.calculateItemTotal(row);
+                        this.updateDealSizeFromItems();
+                    }
+
+                    // Handle discounted price manual change
+                    else if (target.classList.contains('item-discounted-price')) {
+                        this.updateDiscountPercentage(row);
+                        this.calculateItemTotal(row);
+                        this.updateDealSizeFromItems();
+                    }
                 });
 
                 this.updateDealSizeFromItems();
             }
 
+            updateDiscountedPrice(row) {
+                if (!row) return;
+
+                const priceInput = row.querySelector('.item-price');
+                const discInput = row.querySelector('.item-disc');
+                const discountedPriceInput = row.querySelector('.item-discounted-price');
+
+                if (!priceInput || !discInput || !discountedPriceInput) return;
+
+                const price = parseFloat(priceInput.value) || 0;
+                const disc = parseFloat(discInput.value) || 0;
+
+                // Calculate discounted price
+                const discountedPrice = price * (1 - disc / 100);
+                discountedPriceInput.value = discountedPrice.toFixed(2);
+            }
+
+            updateDiscountPercentage(row) {
+                if (!row) return;
+
+                const priceInput = row.querySelector('.item-price');
+                const discInput = row.querySelector('.item-disc');
+                const discountedPriceInput = row.querySelector('.item-discounted-price');
+
+                if (!priceInput || !discInput || !discountedPriceInput) return;
+
+                const price = parseFloat(priceInput.value) || 0;
+                const discountedPrice = parseFloat(discountedPriceInput.value) || 0;
+
+                // Calculate discount percentage
+                if (price > 0) {
+                    const discountPercent = ((price - discountedPrice) / price) * 100;
+                    discInput.value = Math.max(0, Math.min(100, discountPercent)).toFixed(2);
+                }
+            }
+
+
             calculateItemTotal(row) {
                 if (!row) return;
-                const qtyInput = row.querySelector('input[name*="[qty]"]');
-                const priceInput = row.querySelector('input[name*="[discountedPrice]"]');
-                const totalInput = row.querySelector('input[name*="[totalPrice]"]');
-                if (!qtyInput || !priceInput || !totalInput) return;
+
+                const qtyInput = row.querySelector('.item-qty');
+                const discountedPriceInput = row.querySelector('.item-discounted-price');
+                const totalInput = row.querySelector('.item-total');
+
+                if (!qtyInput || !discountedPriceInput || !totalInput) return;
 
                 const qty = parseFloat(qtyInput.value) || 0;
-                const price = parseFloat(priceInput.value) || 0;
-                const total = qty * price;
+                const discountedPrice = parseFloat(discountedPriceInput.value) || 0;
+                const total = qty * discountedPrice;
 
                 totalInput.value = total > 0 ? this.formatCurrency(total) : '';
             }
@@ -2059,10 +2179,10 @@
 
                 let sum = 0;
                 container.querySelectorAll('.item-row').forEach((row) => {
-                    const qty = parseFloat(row.querySelector('input[name*="[qty]"]')?.value || '0') || 0;
-                    const price = parseFloat(row.querySelector('input[name*="[discountedPrice]"]')?.value ||
+                    const qty = parseFloat(row.querySelector('.item-qty')?.value || '0') || 0;
+                    const discountedPrice = parseFloat(row.querySelector('.item-discounted-price')?.value ||
                         '0') || 0;
-                    sum += qty * price;
+                    sum += qty * discountedPrice;
                 });
 
                 dealSizeInput.value = sum;
@@ -2091,33 +2211,44 @@
       <div class="item-row card mb-3" data-item="${index}">
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-5">
+            <div class="col-md-4">
               <label class="form-label">Pilih Item</label>
               <select class="form-select item-select" name="items[${index}][itemSelect]" data-index="${index}"></select>
               <input type="hidden" name="items[${index}][itemCode]" class="legacy-item-code">
               <input type="hidden" name="items[${index}][itemName]" class="legacy-item-name">
             </div>
-            <div class="col-md-2">
+            
+            <div class="col-md-1">
               <label class="form-label">UoM</label>
               <input type="text" class="form-control item-uom" name="items[${index}][uom]" readonly tabindex="-1">
             </div>
+            
             <div class="col-md-2">
-              <label class="form-label">Qty</label>
-              <input type="number" class="form-control" name="items[${index}][qty]" min="1">
+              <label class="form-label">Harga</label>
+              <input type="number" class="form-control item-price bg-light" name="items[${index}][price]" readonly tabindex="-1">
             </div>
+            
+            <div class="col-md-1">
+              <label class="form-label">Qty</label>
+              <input type="number" class="form-control item-qty" name="items[${index}][qty]" min="1">
+            </div>
+            
             <div class="col-md-1">
               <label class="form-label">Disc %</label>
-              <input type="number" class="form-control item-disc" name="items[${index}][disc]" min="0" max="100" step="0.01" readonly tabindex="-1">
+              <input type="number" class="form-control item-disc" name="items[${index}][disc]" min="0" max="100" step="0.01">
             </div>
+            
             <div class="col-md-2">
               <label class="form-label">Harga (after disc)</label>
-              <input type="number" class="form-control" name="items[${index}][discountedPrice]" min="0" step="0.01" readonly tabindex="-1">
+              <input type="number" class="form-control item-discounted-price" name="items[${index}][discountedPrice]" min="0" step="0.01">
             </div>
+            
             <div class="col-md-2">
               <label class="form-label">Total</label>
-              <input type="text" class="form-control" name="items[${index}][totalPrice]" readonly tabindex="-1">
+              <input type="text" class="form-control item-total bg-light" name="items[${index}][totalPrice]" readonly tabindex="-1">
             </div>
           </div>
+          
           <button type="button" class="btn btn-outline-danger btn-sm mt-2 remove-item-btn" data-remove="${index}">
             <i class="fas fa-trash me-1" aria-hidden="true"></i> Hapus Item
           </button>
@@ -2153,6 +2284,16 @@
             setTodayDate() {
                 const dateInput = document.getElementById('createdDate');
                 if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+            }
+            setDefaultEmail() {
+                const emailInput = document.getElementById('email');
+                if (emailInput && !emailInput.value) {
+                    // Get user email from blade template
+                    const userEmail = '{{ auth()->user()->email ?? '' }}';
+                    if (userEmail) {
+                        emailInput.value = userEmail;
+                    }
+                }
             }
 
             // ===== STORE SELECT2 =====
@@ -2385,22 +2526,26 @@
                     width: '100%'
                 });
 
-                $select.on('select2:open', () => {
-                    const $search = $('.select2-container--open .select2-search__field');
-                    if ($search.val() === '') $search.trigger('input');
-                });
-
                 $select.on('select2:select', (e) => {
                     const d = e.params.data || {};
                     const $row = $(rowEl);
 
+                    // Set hidden fields
                     $row.find('input.legacy-item-code').val(d.id || '');
                     $row.find('input.legacy-item-name').val(d.item_name || '');
                     $row.find('input.item-uom').val(d.uom || '');
+
+                    // Set price field (readonly)
+                    $row.find('input.item-price').val(d.price || 0);
+
+                    // Set initial discount from item master
                     $row.find('input.item-disc').val(d.disc ?? 0);
 
-                    const afterDisc = this.computeDiscountedPrice(d.price, d.disc);
-                    $row.find('input[name*="[discountedPrice]"]').val(afterDisc);
+                    // Calculate initial discounted price
+                    const price = parseFloat(d.price) || 0;
+                    const disc = parseFloat(d.disc) || 0;
+                    const discountedPrice = price * (1 - disc / 100);
+                    $row.find('input.item-discounted-price').val(discountedPrice.toFixed(2));
 
                     this.calculateItemTotal(rowEl);
                     this.updateDealSizeFromItems();
@@ -2411,9 +2556,10 @@
                     $row.find('input.legacy-item-code').val('');
                     $row.find('input.legacy-item-name').val('');
                     $row.find('input.item-uom').val('');
+                    $row.find('input.item-price').val('');
                     $row.find('input.item-disc').val('');
-                    $row.find('input[name*="[discountedPrice]"]').val('');
-                    $row.find('input[name*="[totalPrice]"]').val('');
+                    $row.find('input.item-discounted-price').val('');
+                    $row.find('input.item-total').val('');
                     this.updateDealSizeFromItems();
                 });
             }
