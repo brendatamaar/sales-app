@@ -1,6 +1,23 @@
 @extends('layout.master')
 
 @push('plugin-styles')
+<style>
+    .card-statistics {
+        border-left: 4px solid #007bff;
+    }
+
+    .table-row-highlighted {
+        background-color: #fff3cd !important;
+        border: 2px solid #ffc107 !important;
+        animation: highlightPulse 2s ease-in-out;
+    }
+
+    @keyframes highlightPulse {
+        0% { background-color: #fff3cd; }
+        50% { background-color: #ffeaa7; }
+        100% { background-color: #fff3cd; }
+    }
+</style>
 @endpush
 
 @section('content')
@@ -41,7 +58,10 @@
         </div>
     </div>
 
-
+    {{-- Total Deals --}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title mb-4">Real Time Data Deals</h3>
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 g-3" style="margin-bottom: 20px;">
         {{-- Mapping --}}
         <div class="col d-flex">
@@ -133,49 +153,209 @@
             </div>
         </div>
     </div>
+    </div>
+    </div>
+
+    {{-- Summary Deals Berdasarkan History Stage --}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title mb-4">Summary Data Deals (Berdasarkan History Stage)</h3>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 g-3" style="margin-bottom: 20px;">
+        {{-- Mapping --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-map-marker-outline text-danger icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Mapping</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($history_summary['mapping'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals yang pernah melalui mapping
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Visit --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-account-search text-warning icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Visit</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($history_summary['visit'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals yang pernah melalui visit
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Quotation --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-file-document-box-check-outline text-success icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Quotation</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($history_summary['quotation'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals yang pernah melalui quotation
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Won --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-trophy-outline text-info icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Won</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($history_summary['won'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals yang pernah melalui won
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Lost --}}
+        <div class="col d-flex">
+            <div class="card card-statistics w-100 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <i class="mdi mdi-close-circle-outline text-secondary icon-lg"></i>
+                        <div class="text-right">
+                            <p class="mb-0">Lost</p>
+                            <h3 class="font-weight-medium mb-0">{{ number_format($history_summary['lost'] ?? 0) }}</h3>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-information-outline mr-1"></i> Total deals yang pernah melalui lost
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
 
     <!-- Store & Customer Input Section -->
     <div class="card mb-4">
         <div class="card-body">
             <h3 class="card-title mb-4">📍 Input Lokasi Toko</h3>
 
-            <!-- Input Alamat Toko -->
+            <!-- Pilih Store -->
             <div class="row mb-4">
-                <div class="col-md-9">
-                    <input id="alamatTokoInput" type="text" class="form-control" placeholder="Masukkan alamat toko...">
-                </div>
-                <div class="col-md-3">
-                    <button onclick="setStoreLocation()" class="btn btn-primary btn-block">Set Lokasi Toko</button>
-                </div>
-            </div>
-
-            <h4 class="mb-3">👥 Input Data Customer</h4>
-
-            <!-- Input Data Customer -->
-            <div class="row mb-3">
                 <div class="col-md-6">
-                    <input id="namaInput" type="text" class="form-control" placeholder="Nama Customer">
+                    <label class="form-label">Pilih Store (Multiple):</label>
+                    <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                        @foreach($stores as $store)
+                            <div class="form-check">
+                                <input class="form-check-input store-checkbox" type="checkbox"
+                                       value="{{ $store->store_id }}"
+                                       data-address="{{ $store->store_address }}"
+                                       data-name="{{ $store->store_name }}"
+                                       id="store_{{ $store->store_id }}"
+                                       onchange="onStoreChange()">
+                                <label class="form-check-label" for="store_{{ $store->store_id }}">
+                                    {{ $store->store_name }}
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+                    <small class="text-muted">Pilih satu atau lebih store untuk melihat customer dan lokasi</small>
                 </div>
                 <div class="col-md-6">
-                    <input id="telpInput" type="text" class="form-control" placeholder="No. Telp Customer">
+                    <label class="form-label">Store yang Dipilih:</label>
+                    <div id="selectedStoresInfo" class="border rounded p-3 mb-2" style="min-height: 100px; max-height: 200px; overflow-y: auto;">
+                        <small class="text-muted">Belum ada store yang dipilih</small>
+                    </div>
+                    <input id="alamatTokoInput" type="text" class="form-control" placeholder="Alamat toko akan terisi otomatis..." readonly>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <button onclick="setSelectedStoresLocation()" class="btn btn-primary">Set Lokasi Store yang Dipilih</button>
+                    <small class="text-muted d-block mt-1">Tombol ini akan menampilkan lokasi semua store yang dipilih di peta</small>
+                </div>
+            </div>
+
+            <!--
+            <h4 class="mb-3">👥 Pilih Customer</h4>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <select id="customerSelect" class="form-control" onchange="onCustomerChange()">
+                        <option value="">Pilih Customer...</option>
+                        @foreach($customers as $customer)
+                            <option value="{{ $customer->id_cust }}"
+                                    data-name="{{ $customer->cust_name }}"
+                                    data-phone="{{ $customer->no_telp_cust }}"
+                                    data-address="{{ $customer->cust_address }}"
+                                    data-store="{{ $customer->store_id }}">
+                                {{ $customer->cust_name }} ({{ $customer->store->store_name ?? 'No Store' }})
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
             <div class="row mb-3">
-                <div class="col-md-9">
-                    <input id="alamatInput" type="text" class="form-control"
-                        placeholder="Masukkan alamat customer...">
+                <div class="col-md-4">
+                    <input id="namaInput" type="text" class="form-control" placeholder="Nama Customer" readonly>
                 </div>
-                <div class="col-md-3">
-                    <button onclick="addToList()" class="btn btn-primary btn-block">Tambah</button>
+                <div class="col-md-4">
+                    <input id="telpInput" type="text" class="form-control" placeholder="No. Telp Customer" readonly>
+                </div>
+                <div class="col-md-4">
+                    <input id="alamatInput" type="text" class="form-control" placeholder="Alamat Customer" readonly>
                 </div>
             </div>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <button onclick="addToList()" class="btn btn-primary">Tambah ke Daftar</button>
+                </div>
+            </div>
+            -->
 
             <div id="latlngResult" class="text-muted small mb-2"></div>
             <div id="suggestions" class="bg-white border rounded shadow-sm" style="max-height: 160px; overflow-y: auto;">
             </div>
 
             <h5 class="mt-4 mb-3">📋 Datalist Customer</h5>
+
+            <!-- Legend untuk warna -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success rounded-circle me-2" style="width: 12px; height: 12px;"></div>
+                        <small class="text-muted">Customer dari Store yang dipilih (bisa multiple)</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-secondary rounded-circle me-2" style="width: 12px; height: 12px;"></div>
+                        <small class="text-muted">Customer dari Store lain</small>
+                    </div>
+                </div>
+            </div>
+
             <div class="table-responsive mb-4">
                 <table class="table table-sm table-hover table-bordered">
                     <thead class="table-light text-center">
@@ -184,6 +364,8 @@
                             <th>Nama</th>
                             <th>Telp</th>
                             <th>Alamat</th>
+                            <th>Store</th>
+                            <th>Warna</th>
                             <th>Latitude</th>
                             <th>Longitude</th>
                             <th>Aksi</th>
@@ -427,6 +609,7 @@
         let infoWindow;
         let autocompleteService;
         let storeMarker = null;
+        let storeMarkers = []; // Array untuk menyimpan multiple store markers
         let storeCircles = [];
 
         function initMap() {
@@ -507,9 +690,335 @@
             });
         }
 
-        function setStoreLocation() {
-            const alamat = document.getElementById("alamatTokoInput").value.trim();
-            if (!alamat) return alert("Alamat toko wajib diisi!");
+        // Dataset semua customer untuk filtering client-side
+        const allCustomers = @json($customers);
+
+        // Fungsi untuk mendapatkan warna berdasarkan store ID
+        function getStoreColor(storeId, index = 0) {
+            const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB'];
+            return colors[index % colors.length];
+        }
+
+        // Fungsi untuk mendapatkan warna berdasarkan store ID dari selected stores
+        function getStoreColorById(storeId, selectedStoreIds) {
+            if (!selectedStoreIds || !selectedStoreIds.includes(String(storeId))) {
+                return '#808080'; // Abu-abu untuk store yang tidak dipilih
+            }
+            const index = selectedStoreIds.indexOf(String(storeId));
+            return getStoreColor(storeId, index);
+        }
+
+        function onStoreChange() {
+            const storeCheckboxes = document.querySelectorAll('.store-checkbox:checked');
+            const alamatInput = document.getElementById('alamatTokoInput');
+            const selectedStoresInfo = document.getElementById('selectedStoresInfo');
+
+            // Ambil semua store yang dipilih
+            const selectedStores = Array.from(storeCheckboxes);
+            const selectedStoreIds = selectedStores.map(checkbox => checkbox.value);
+
+            if (selectedStoreIds.length > 0) {
+                // Tampilkan informasi store yang dipilih dalam format list
+                let storeListHtml = '<div class="mb-2"><strong>Store yang dipilih (${selectedStoreIds.length}):</strong></div>';
+                selectedStores.forEach((checkbox, index) => {
+                    const storeName = checkbox.getAttribute('data-name');
+                    const storeAddress = checkbox.getAttribute('data-address');
+                    storeListHtml += `
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                            <div>
+                                <strong>${index + 1}. ${storeName}</strong><br>
+                                <small class="text-muted">${storeAddress}</small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStore('${checkbox.value}')">
+                                <i class="mdi mdi-close"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                selectedStoresInfo.innerHTML = storeListHtml;
+
+                // Ambil alamat dari store pertama untuk input alamat
+                const firstStoreAddress = selectedStores[0].getAttribute('data-address') || '';
+                alamatInput.value = firstStoreAddress;
+
+                // Set lokasi toko di peta untuk semua store yang dipilih
+                setMultipleStoreLocations(selectedStores);
+
+                // Filter customers berdasarkan store yang dipilih (multiple)
+                filterCustomersByStore(selectedStoreIds);
+            } else {
+                alamatInput.value = '';
+                selectedStoresInfo.innerHTML = '<small class="text-muted">Belum ada store yang dipilih</small>';
+
+                // Reset customer dropdown
+                resetCustomerDropdown();
+
+                // Hapus semua marker store
+                clearAllStoreMarkers();
+            }
+        }
+
+        // Fungsi untuk menampilkan info deals customer saat hover
+        function showCustomerDealsInfo(customerId, customerName, marker) {
+            // Simulasi data deals (dalam implementasi nyata, ini akan diambil dari API)
+            const dealsData = [
+                { deal_name: "Deal A", stage: "mapping", deal_size: 1000000, created_date: "2024-01-15" },
+                { deal_name: "Deal B", stage: "visit", deal_size: 2500000, created_date: "2024-01-20" },
+                { deal_name: "Deal C", stage: "quotation", deal_size: 5000000, created_date: "2024-01-25" }
+            ];
+
+            // Filter deals yang belum mencapai stage "won"
+            const activeDeals = dealsData.filter(deal => deal.stage !== 'won' && deal.stage !== 'lost');
+
+            let content = `<div style="max-width: 300px;">
+                <h6 style="margin: 0 0 10px 0; color: #333;">${customerName}</h6>
+                <p style="margin: 0 0 10px 0; font-size: 12px; color: #666;">Customer ID: ${customerId}</p>
+                <hr style="margin: 10px 0;">
+                <h6 style="margin: 0 0 10px 0; color: #333;">Active Deals:</h6>
+            `;
+
+            if (activeDeals.length > 0) {
+                activeDeals.forEach(deal => {
+                    const stageColor = {
+                        'mapping': '#FF0000',
+                        'visit': '#FFA500',
+                        'quotation': '#0000FF'
+                    }[deal.stage] || '#808080';
+
+                    content += `
+                        <div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                            <div style="font-weight: bold; font-size: 12px;">${deal.deal_name}</div>
+                            <div style="font-size: 11px; color: #666;">
+                                Stage: <span style="color: ${stageColor}; font-weight: bold;">${deal.stage.toUpperCase()}</span><br>
+                                Value: Rp ${deal.deal_size.toLocaleString()}<br>
+                                Date: ${deal.created_date}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                content += `<p style="margin: 0; font-size: 12px; color: #666;">No active deals</p>`;
+            }
+
+            content += `</div>`;
+
+            if (!infoWindow) {
+                infoWindow = new google.maps.InfoWindow();
+            }
+
+            infoWindow.setContent(content);
+            infoWindow.open(map, marker);
+        }
+
+        function hideCustomerDealsInfo() {
+            if (infoWindow) {
+                infoWindow.close();
+            }
+        }
+
+        function removeStore(storeId) {
+            // Uncheck checkbox untuk store yang dipilih
+            const checkbox = document.getElementById(`store_${storeId}`);
+            if (checkbox) {
+                checkbox.checked = false;
+                // Trigger onStoreChange untuk update display
+                onStoreChange();
+            }
+        }
+
+        function filterCustomersByStore(storeIds) {
+            // Tampilkan semua customer, bukan hanya yang dari store yang dipilih
+            const allCustomersData = allCustomers || [];
+
+            // Render semua customer dengan informasi store yang dipilih (bisa multiple)
+            renderCustomerListAndMarkers(allCustomersData, storeIds);
+        }
+
+        function resetCustomerDropdown() {
+            // Tampilkan semua customer ketika tidak ada store yang dipilih
+            const allCustomersData = allCustomers || [];
+            renderCustomerListAndMarkers(allCustomersData, null);
+        }
+
+        function renderCustomerListAndMarkers(customers, selectedStoreIds = null) {
+            const table = document.getElementById('dataTable');
+            if (!table) return;
+            table.innerHTML = '';
+            clearMarkers();
+
+            const bounds = new google.maps.LatLngBounds();
+            customers.forEach(function(c, idx){
+                const row = document.createElement('tr');
+                const lat = Number(c.latitude);
+                const lng = Number(c.longitude);
+
+                // Tentukan apakah customer dari store yang dipilih (bisa multiple)
+                const isFromSelectedStore = selectedStoreIds && selectedStoreIds.includes(String(c.store_id));
+                const storeColor = getStoreColorById(c.store_id, selectedStoreIds);
+
+                // Set warna baris berdasarkan store
+                if (isFromSelectedStore) {
+                    row.style.backgroundColor = '#e8f5e8'; // Hijau muda untuk store yang dipilih
+                    row.style.fontWeight = 'bold';
+                } else {
+                    row.style.backgroundColor = '#f8f9fa'; // Abu-abu muda untuk store lain
+                }
+
+                row.innerHTML = `
+                    <td>${idx + 1}</td>
+                    <td>${c.cust_name || '-'}</td>
+                    <td>${c.no_telp_cust || '-'}</td>
+                    <td class="text-left">${c.cust_address || '-'}</td>
+                    <td>${c.store ? c.store.store_name : 'No Store'}</td>
+                    <td>
+                        <div class="d-flex align-items-center justify-content-center">
+                            <div class="rounded-circle me-2" style="width: 16px; height: 16px; background-color: ${storeColor};"></div>
+                            <small>${storeColor}</small>
+                        </div>
+                    </td>
+                    <td>${isFinite(lat) ? lat : '-'}</td>
+                    <td>${isFinite(lng) ? lng : '-'}</td>
+                    <td><button class="btn btn-sm btn-success" onclick="focusMarker(${markers.length}, '${c.id_cust}')">Select</button></td>
+                `;
+                table.appendChild(row);
+
+                if (isFinite(lat) && isFinite(lng)) {
+                    // Buat marker customer dengan warna yang sesuai store
+                    const marker = new google.maps.Marker({
+                        position: { lat: lat, lng: lng },
+                        map,
+                        title: c.cust_name || 'Customer',
+                        icon: {
+                            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                                <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="10" cy="10" r="8" fill="${storeColor}" stroke="white" stroke-width="2"/>
+                                    <text x="10" y="13" text-anchor="middle" fill="white" font-size="10" font-weight="bold">C</text>
+                                </svg>
+                            `)}`
+                        },
+                        customerId: c.id_cust,
+                        customerName: c.cust_name
+                    });
+
+                    // Tambahkan event listener untuk hover
+                    marker.addListener('mouseover', function() {
+                        showCustomerDealsInfo(c.id_cust, c.cust_name, marker);
+                    });
+
+                    marker.addListener('mouseout', function() {
+                        hideCustomerDealsInfo();
+                    });
+
+                    markers.push(marker);
+
+                    const pos = new google.maps.LatLng(lat, lng);
+                    bounds.extend(pos);
+                }
+            });
+
+            if (!bounds.isEmpty()) {
+                map.fitBounds(bounds);
+            }
+        }
+
+        function setMultipleStoreLocations(selectedStores) {
+            // Hapus semua marker store yang ada
+            clearAllStoreMarkers();
+
+            if (selectedStores.length === 0) return;
+
+            const bounds = new google.maps.LatLngBounds();
+            let completedRequests = 0;
+
+            selectedStores.forEach((storeCheckbox, index) => {
+                const address = storeCheckbox.getAttribute('data-address');
+                const storeName = storeCheckbox.getAttribute('data-name');
+
+                if (!address || !geocoder) return;
+
+                geocoder.geocode({
+                    address: address
+                }, function(results, status) {
+                    completedRequests++;
+
+                    if (status === "OK") {
+                        const loc = results[0].geometry.location;
+                        const lat = loc.lat();
+                        const lng = loc.lng();
+
+                        // Buat marker untuk store ini dengan warna yang sesuai
+                        const color = getStoreColor(storeCheckbox.value, index);
+                        const marker = new google.maps.Marker({
+                            map,
+                            position: loc,
+                            icon: {
+                                url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2"/>
+                                        <text x="12" y="16" text-anchor="middle" fill="white" font-size="12" font-weight="bold">S</text>
+                                    </svg>
+                                `)}`
+                            },
+                            title: storeName || "Store"
+                        });
+
+                        storeMarkers.push(marker);
+
+                        // Buat circle untuk store ini dengan warna yang sesuai
+
+                        const circle = new google.maps.Circle({
+                            map,
+                            center: loc,
+                            radius: 5000,
+                            fillColor: color,
+                            fillOpacity: 0.1,
+                            strokeColor: color,
+                            strokeOpacity: 0.3,
+                            strokeWeight: 2
+                        });
+
+                        storeCircles.push(circle);
+
+                        // Buat circle radius 10km juga
+                        const circle10km = new google.maps.Circle({
+                            map,
+                            center: loc,
+                            radius: 10000,
+                            fillColor: color,
+                            fillOpacity: 0.05,
+                            strokeColor: color,
+                            strokeOpacity: 0.2,
+                            strokeWeight: 1
+                        });
+
+                        storeCircles.push(circle10km);
+
+                        bounds.extend(loc);
+                    }
+
+                    // Jika semua request selesai, fit bounds
+                    if (completedRequests === selectedStores.length) {
+                        if (!bounds.isEmpty()) {
+                            map.fitBounds(bounds);
+                        }
+
+                        // Update info lokasi
+                        if (selectedStores.length === 1) {
+                            const firstStore = selectedStores[0];
+                            const firstAddress = firstStore.getAttribute('data-address');
+                            document.getElementById("latlngResult").innerHTML =
+                                `📍 Store Location: ${firstAddress}`;
+                        } else {
+                            document.getElementById("latlngResult").innerHTML =
+                                `📍 ${selectedStores.length} Store Locations Selected`;
+                        }
+                    }
+                });
+            });
+        }
+
+        function setStoreLocationAutomatically(alamat) {
+            if (!alamat || !geocoder) return;
 
             geocoder.geocode({
                 address: alamat
@@ -555,15 +1064,58 @@
 
                     map.setCenter(loc);
                     map.setZoom(12);
+
+                    document.getElementById("latlngResult").innerHTML =
+                        `📍 Store Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
                 } else {
-                    alert("Alamat toko tidak valid.");
+                    console.log("Geocoding failed: " + status);
                 }
             });
+        }
+
+        function setSelectedStoresLocation() {
+            const storeCheckboxes = document.querySelectorAll('.store-checkbox:checked');
+            const selectedStores = Array.from(storeCheckboxes);
+
+            if (selectedStores.length === 0) {
+                alert("Pilih minimal satu store terlebih dahulu!");
+                return;
+            }
+
+            // Set lokasi toko di peta untuk semua store yang dipilih
+            setMultipleStoreLocations(selectedStores);
+
+            // Tampilkan pesan konfirmasi
+            const storeNames = selectedStores.map(checkbox => checkbox.getAttribute('data-name')).join(', ');
+            alert(`Lokasi ${selectedStores.length} store telah ditampilkan di peta:\n${storeNames}`);
+        }
+
+        function setStoreLocation() {
+            const alamat = document.getElementById("alamatTokoInput").value.trim();
+            if (!alamat) return alert("Alamat toko wajib diisi!");
+
+            setStoreLocationAutomatically(alamat);
         }
 
         function clearStoreCircles() {
             storeCircles.forEach(c => c.setMap(null));
             storeCircles = [];
+        }
+
+        function clearAllStoreMarkers() {
+            // Hapus marker store lama
+            if (storeMarker) {
+                storeMarker.setMap(null);
+                storeMarker = null;
+            }
+
+            // Hapus semua marker store baru
+            storeMarkers.forEach(marker => marker.setMap(null));
+            storeMarkers = [];
+
+            // Hapus semua circle
+            clearStoreCircles();
         }
 
         function addToList() {
@@ -661,14 +1213,31 @@
             }
         }
 
-        function focusMarker(index) {
-            const item = dataList[index];
-            const position = new google.maps.LatLng(item.lat, item.lng);
-            map.setCenter(position);
-            map.setZoom(17);
+        function focusMarker(index, customerId = null) {
+            // Hapus highlight sebelumnya
+            document.querySelectorAll('.table-row-highlighted').forEach(row => {
+                row.classList.remove('table-row-highlighted');
+            });
 
             if (markers[index]) {
+                // Focus ke marker di peta
+                map.setCenter(markers[index].getPosition());
+                map.setZoom(15);
+
+                // Trigger click event untuk marker
                 google.maps.event.trigger(markers[index], "click");
+
+                // Highlight baris tabel jika ada customerId
+                if (customerId) {
+                    const tableRows = document.querySelectorAll('#dataTable tr');
+                    tableRows.forEach(row => {
+                        const button = row.querySelector('button');
+                        if (button && button.onclick.toString().includes(customerId)) {
+                            row.classList.add('table-row-highlighted');
+                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    });
+                }
             }
         }
 

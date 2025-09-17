@@ -31,6 +31,7 @@
             <th>#</th>
             <th>Store Name</th>
             <th>Region</th>
+            <th>Address</th>
             <th>No. Rekening Store</th>
             <th style="width:180px">Action</th>
           </tr>
@@ -41,6 +42,7 @@
               <td>{{ ($stores->currentPage()-1)*$stores->perPage() + $loop->iteration }}</td>
               <td>{{ $store->store_name }}</td>
               <td>{{ $store->region ?? '-' }}</td>
+              <td>{{ $store->store_address ?? '-' }}</td>
               <td>{{ $store->no_rek_store ?? '-' }}</td>
               <td>
                 <form action="{{ route('stores.destroy', $store->store_id) }}" method="POST" onsubmit="return confirm('Delete this store?')">
@@ -52,7 +54,7 @@
               </td>
             </tr>
           @empty
-            <tr><td colspan="5" class="text-center text-muted"><strong>No Store Found!</strong></td></tr>
+            <tr><td colspan="6" class="text-center text-muted"><strong>No Store Found!</strong></td></tr>
           @endforelse
         </tbody>
       </table>

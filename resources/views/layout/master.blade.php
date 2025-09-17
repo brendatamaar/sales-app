@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Portal SWM</title>
+    <title>New Apps</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -389,6 +389,16 @@
 
         .item-row:hover {
             box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+        }
+
+        .deal-content:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+            border-radius: 0.25rem;
+        }
+
+        .kanban-card .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
         }
 
         #loadingSpinner {

@@ -50,7 +50,13 @@ class UserController extends Controller
     {
         $roles = Role::pluck('name', 'id');   // untuk select
         $stores = Store::orderBy('store_name')->get(['store_id', 'store_name']);
-        return view('users.create', compact('roles', 'stores'));
+        $regions = Store::query()
+            ->whereNotNull('region')
+            ->where('region', '!=', '')
+            ->orderBy('region')
+            ->distinct()
+            ->pluck('region', 'region');
+        return view('users.create', compact('roles', 'stores', 'regions'));
     }
 
     /**

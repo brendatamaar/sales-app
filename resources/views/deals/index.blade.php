@@ -21,107 +21,112 @@
 
     {{-- Action Bar --}}
     <section class="action-bar d-flex justify-content-between align-items-center mb-3">
-        <form method="GET" action="{{ route('deals.index') }}" class="card card-body mb-3">
-            <div class="row g-2">
-                <div class="col-md-3">
-                    <label class="form-label">Deals ID</label>
-                    <input type="text" name="deals_id" value="{{ $filters['deals_id'] ?? '' }}" class="form-control"
-                        placeholder="e.g. DL-2025-001">
+        <div id="filterSection" class="collapse">
+            <form method="GET" action="{{ route('deals.index') }}" class="card card-body mb-3">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label">Deals ID</label>
+                        <input type="text" name="deals_id" value="{{ $filters['deals_id'] ?? '' }}" class="form-control"
+                            placeholder="e.g. DL-2025-001">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Deals Name</label>
+                        <input type="text" name="deal_name" value="{{ $filters['deal_name'] ?? '' }}"
+                            class="form-control" placeholder="Search by name">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Salper ID (from Points)</label>
+                        <input type="text" name="salper_id" value="{{ $filters['salper_id'] ?? '' }}"
+                            class="form-control" placeholder="e.g. SLP-001">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Lost Reason</label>
+                        <select name="lost_reason" class="form-select">
+                            <option value="">— All —</option>
+                            @php
+                                $reasons = [
+                                    'Bad Timing',
+                                    'tidak ada response',
+                                    'tidak tertarik',
+                                    'memilih competitor',
+                                    'Harga khusus tidak diapproval',
+                                    'permasalahan internal',
+                                    'produk yg dicari tidak ada',
+                                ];
+                            @endphp
+                            @foreach ($reasons as $reason)
+                                <option value="{{ $reason }}" @if (($filters['lost_reason'] ?? '') === $reason) selected @endif>
+                                    {{ $reason }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Receipt Number</label>
+                        <input type="text" name="receipt_number" value="{{ $filters['receipt_number'] ?? '' }}"
+                            class="form-control" placeholder="Receipt no">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Customer ID</label>
+                        <input type="text" name="id_cust" value="{{ $filters['id_cust'] ?? '' }}" class="form-control"
+                            placeholder="ID Customer">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Created Date (From)</label>
+                        <input type="date" name="created_date_from" value="{{ $filters['created_date_from'] ?? '' }}"
+                            class="form-control">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Created Date (To)</label>
+                        <input type="date" name="created_date_to" value="{{ $filters['created_date_to'] ?? '' }}"
+                            class="form-control">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Closed Date (From)</label>
+                        <input type="date" name="closed_date_from" value="{{ $filters['closed_date_from'] ?? '' }}"
+                            class="form-control">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Closed Date (To)</label>
+                        <input type="date" name="closed_date_to" value="{{ $filters['closed_date_to'] ?? '' }}"
+                            class="form-control">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Per Page</label>
+                        <select name="per_page" class="form-select">
+                            @foreach ([10, 15, 25, 50, 100] as $pp)
+                                <option value="{{ $pp }}" @if (request('per_page', 15) == $pp) selected @endif>
+                                    {{ $pp }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-12 d-flex gap-2 mt-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-1"></i> Apply Filters
+                        </button>
+                        <a href="{{ route('deals.index') }}" class="btn btn-secondary">
+                            Reset
+                        </a>
+                    </div>
                 </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Deals Name</label>
-                    <input type="text" name="deal_name" value="{{ $filters['deal_name'] ?? '' }}" class="form-control"
-                        placeholder="Search by name">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Salper ID (from Points)</label>
-                    <input type="text" name="salper_id" value="{{ $filters['salper_id'] ?? '' }}" class="form-control"
-                        placeholder="e.g. SLP-001">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Lost Reason</label>
-                    <select name="lost_reason" class="form-select">
-                        <option value="">— All —</option>
-                        @php
-                            $reasons = [
-                                'Bad Timing',
-                                'tidak ada response',
-                                'tidak tertarik',
-                                'memilih competitor',
-                                'Harga khusus tidak diapproval',
-                                'permasalahan internal',
-                                'produk yg dicari tidak ada',
-                            ];
-                        @endphp
-                        @foreach ($reasons as $reason)
-                            <option value="{{ $reason }}" @if (($filters['lost_reason'] ?? '') === $reason) selected @endif>
-                                {{ $reason }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Receipt Number</label>
-                    <input type="text" name="receipt_number" value="{{ $filters['receipt_number'] ?? '' }}"
-                        class="form-control" placeholder="Receipt no">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Customer ID</label>
-                    <input type="text" name="id_cust" value="{{ $filters['id_cust'] ?? '' }}" class="form-control"
-                        placeholder="ID Customer">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Created Date (From)</label>
-                    <input type="date" name="created_date_from" value="{{ $filters['created_date_from'] ?? '' }}"
-                        class="form-control">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Created Date (To)</label>
-                    <input type="date" name="created_date_to" value="{{ $filters['created_date_to'] ?? '' }}"
-                        class="form-control">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Closed Date (From)</label>
-                    <input type="date" name="closed_date_from" value="{{ $filters['closed_date_from'] ?? '' }}"
-                        class="form-control">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Closed Date (To)</label>
-                    <input type="date" name="closed_date_to" value="{{ $filters['closed_date_to'] ?? '' }}"
-                        class="form-control">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Per Page</label>
-                    <select name="per_page" class="form-select">
-                        @foreach ([10, 15, 25, 50, 100] as $pp)
-                            <option value="{{ $pp }}" @if (request('per_page', 15) == $pp) selected @endif>
-                                {{ $pp }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-md-12 d-flex gap-2 mt-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-filter me-1"></i> Apply Filters
-                    </button>
-                    <a href="{{ route('deals.index') }}" class="btn btn-secondary">
-                        Reset
-                    </a>
-                </div>
-            </div>
-        </form>
-
-
+            </form>
+        </div>
         <div class="action-left d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-primary btn-sm" id="toggleFilterBtn">
+                <i class="fas fa-filter me-1"></i>
+                <span id="filterButtonText">Show Filters</span>
+            </button>
+
             <a href="{{ route('deals.expired') }}" class="btn btn-danger btn-sm">
                 <i class="fas fa-hourglass-end"></i> Expired Deals
             </a>
@@ -156,7 +161,7 @@
     </section>
 
     {{-- Kanban Board --}}
-    <main class="kanban-grid d-grid gap-3" style="grid-template-columns: repeat(5, 1fr);" id="kanbanBoard">
+    <main class="kanban-grid d-grid gap-3" id="kanbanBoard">
         @php
             $stageConfig = [
                 'mapping' => ['label' => 'MAPPING', 'color' => 'bg-primary'],
@@ -187,42 +192,60 @@
                         <article class="kanban-card card mb-2 shadow-sm" data-id="{{ e($deal->deals_id) }}"
                             data-stage="{{ e($stageKey) }}">
                             <div class="card-body p-2">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <h3 class="fw-semibold h6 mb-1">{{ $deal->deal_name }}</h3>
+                                <!-- Make the content clickable for viewing details -->
+                                <div class="deal-content" style="cursor: pointer;"
+                                    data-url="{{ route('deals.detail', $deal->deals_id) }}">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <h3 class="fw-semibold h6 mb-1">{{ $deal->deal_name }}</h3>
+                                    </div>
 
+                                    <div class="small text-muted mb-1">
+                                        {{ $deal->deal_size ? 'Rp ' . number_format($deal->deal_size, 0, ',', '.') : 'Rp 0' }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        Created at: {{ $deal->created_date ? $deal->created_date->format('d/m/Y') : '-' }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        Closed at: {{ $deal->closed_date ? $deal->closed_date->format('d/m/Y') : '-' }}
+                                    </div>
+
+                                    <div class="small text-muted fst-italic">
+                                        {{ $deal->stage_days_label ?? '-' }}
+                                    </div>
                                 </div>
 
-                                <div class="d-flex align-items-center">
-                                    @if ($deal->expires_at)
-                                        <span
-                                            class="badge {{ $deal->is_expired ? 'bg-danger' : 'bg-warning text-dark' }} me-2">
-                                            {{ $deal->is_expired ? 'Expired' : 'Expires on: ' . $deal->expires_at->timezone('Asia/Jakarta')->format('d/m/Y') }}
-                                        </span>
+                                @if ($deal->expires_at)
+                                    <span
+                                        class="badge {{ $deal->is_expired ? 'bg-danger' : 'bg-warning text-dark' }} me-2">
+                                        {{ $deal->is_expired ? 'Expired' : 'Expires on: ' . $deal->expires_at->timezone('Asia/Jakarta')->format('d/m/Y') }}
+                                    </span>
+                                @endif
+
+
+                                <!-- Action buttons (outside clickable area) -->
+                                <div class="d-flex align-items-center gap-1 mt-2">
+                                    <button class="btn btn-sm btn-outline-primary edit-deal-btn"
+                                        data-id="{{ e($deal->deals_id) }}" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+                                    <button class="btn btn-sm btn-outline-info duplicate-deal-btn"
+                                        data-id="{{ e($deal->deals_id) }}" title="Duplicate">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+
+                                    @if (strtolower($deal->stage) !== 'won')
+                                        @can('delete-deals')
+                                            <form action="{{ route('deals.destroy', $deal) }}" method="POST"
+                                                onsubmit="return confirm('Hapus deal ini?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endcan
                                     @endif
-
-                                    @can('delete-deals')
-                                        <form action="{{ route('deals.destroy', $deal) }}" method="POST"
-                                            onsubmit="return confirm('Hapus deal ini?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    @endcan
-                                </div>
-                                <div class="small text-muted mb-1">
-                                    {{ $deal->deal_size ? 'Rp ' . number_format($deal->deal_size, 0, ',', '.') : 'Rp 0' }}
-                                </div>
-                                <div class="small text-muted">
-                                    Created at: {{ $deal->created_date ? $deal->created_date->format('d/m/Y') : '-' }}
-                                </div>
-                                <div class="small text-muted">
-                                    Closed at: {{ $deal->closed_date ? $deal->closed_date->format('d/m/Y') : '-' }}
-                                </div>
-
-                                <div class="small text-muted fst-italic">
-                                    {{ $deal->stage_days_label ?? '-' }}
                                 </div>
                             </div>
                         </article>
@@ -277,9 +300,19 @@
                                     {{ $deal->created_date ? $deal->created_date->format('d/m/Y') : '-' }}</td>
                                 <td data-label="Actions">
                                     <a href="{{ route('deals.show', $deal->deals_id) }}"
-                                        class="btn btn-sm btn-outline-primary">
+                                        class="btn btn-sm btn-outline-primary" title="View">
                                         <i class="fas fa-eye"></i>
                                     </a>
+
+                                    <button class="btn btn-sm btn-outline-primary edit-deal-btn"
+                                        data-id="{{ e($deal->deals_id) }}" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+                                    <button class="btn btn-sm btn-outline-info duplicate-deal-btn"
+                                        data-id="{{ e($deal->deals_id) }}" title="Duplicate">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
 
                                     @can('delete-deals')
                                         <form action="{{ route('deals.destroy', $deal) }}" method="POST" class="d-inline"
@@ -659,6 +692,235 @@
     </div>
 @endsection
 
+@push('custom-styles')
+    <style>
+        /* Responsive Kanban Grid */
+        .kanban-grid {
+            grid-template-columns: repeat(5, 1fr);
+            min-height: 400px;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .kanban-grid {
+                display: flex !important;
+                grid-template-columns: none !important;
+                overflow-x: auto;
+                gap: 1rem;
+                padding-bottom: 1rem;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .kanban-col {
+                flex: 0 0 280px;
+                min-width: 280px;
+                width: 280px;
+                margin-bottom: 0;
+            }
+
+            .kanban-head {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+
+            .kanban-sub {
+                font-size: 0.8rem;
+                padding: 0.25rem 0.5rem;
+            }
+
+            .kanban-body {
+                min-height: 150px;
+                padding: 0.5rem;
+            }
+
+            .kanban-card {
+                margin-bottom: 0.5rem;
+            }
+
+            .kanban-card .card-body {
+                padding: 0.5rem;
+            }
+
+            .kanban-card h3 {
+                font-size: 0.9rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .kanban-card .small {
+                font-size: 0.75rem;
+            }
+
+            /* Mobile Action Bar */
+            .action-bar {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .action-left,
+            .action-right {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            /* Mobile Filter Form */
+            .action-bar form .row {
+                margin: 0;
+            }
+
+            .action-bar form .col-md-3 {
+                margin-bottom: 0.5rem;
+            }
+
+            /* Mobile View Toggle */
+            .btn-group[role="group"] {
+                display: flex !important;
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+
+            .btn-group[role="group"] .btn {
+                flex: 1;
+                font-size: 0.8rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+
+        /* Tablet Responsive */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .kanban-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .kanban-col:nth-child(4),
+            .kanban-col:nth-child(5) {
+                grid-column: span 1;
+            }
+        }
+
+        /* Small Mobile */
+        @media (max-width: 480px) {
+            .kanban-grid {
+                gap: 0.5rem;
+            }
+
+            .kanban-head {
+                font-size: 0.8rem;
+                padding: 0.4rem;
+            }
+
+            .kanban-card .card-body {
+                padding: 0.4rem;
+            }
+
+            .kanban-card h3 {
+                font-size: 0.8rem;
+            }
+
+            .kanban-card .small {
+                font-size: 0.7rem;
+            }
+
+            /* Mobile Modal */
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+
+            .modal-body {
+                padding: 1rem;
+            }
+
+            /* Mobile Form */
+            .form-section {
+                margin-bottom: 1rem;
+            }
+
+            .form-section legend {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Touch-friendly buttons */
+        @media (max-width: 768px) {
+            .btn {
+                min-height: 44px;
+                padding: 0.5rem 1rem;
+            }
+
+            .btn-sm {
+                min-height: 36px;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+
+        /* Horizontal scroll for mobile kanban */
+        @media (max-width: 768px) {
+            .kanban-mobile-scroll {
+                display: flex;
+                overflow-x: auto;
+                gap: 1rem;
+                padding-bottom: 1rem;
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+
+            .kanban-mobile-scroll .kanban-col {
+                flex: 0 0 280px;
+                min-width: 280px;
+            }
+
+            /* Touch support styles */
+            .kanban-mobile-scroll.active {
+                cursor: grabbing;
+            }
+
+            .kanban-mobile-scroll {
+                cursor: grab;
+            }
+
+            /* Hide scrollbar but keep functionality */
+            .kanban-mobile-scroll::-webkit-scrollbar {
+                height: 4px;
+            }
+
+            .kanban-mobile-scroll::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 2px;
+            }
+
+            .kanban-mobile-scroll::-webkit-scrollbar-thumb {
+                background: #888;
+                border-radius: 2px;
+            }
+
+            .kanban-mobile-scroll::-webkit-scrollbar-thumb:hover {
+                background: #555;
+            }
+        }
+
+        /* Mobile kanban card improvements */
+        @media (max-width: 768px) {
+            .kanban-card {
+                touch-action: pan-y;
+                user-select: none;
+            }
+
+            .kanban-card .stretched-link {
+                z-index: 1;
+            }
+
+            /* Better spacing for mobile */
+            .kanban-body {
+                padding: 0.75rem;
+            }
+
+            .kanban-card .card-body {
+                padding: 0.75rem;
+                border-radius: 0.5rem;
+            }
+        }
+    </style>
+@endpush
+
 @push('custom-scripts')
     <script>
         class DealsKanban {
@@ -688,20 +950,18 @@
 
             // ===== SET VIEW =====
             initializeView() {
-                // Set initial view based on screen size
-                if (window.innerWidth <= 768) {
-                    this.switchToListView();
-                } else {
-                    this.switchToKanbanView();
-                }
+                // Always start with kanban view, apply mobile layout if needed
+                this.switchToKanbanView();
 
                 window.addEventListener('resize', () => {
-                    if (window.innerWidth <= 768 && this.currentView === 'kanban') {
-                        this.switchToListView();
-                    } else if (window.innerWidth > 768 && this.currentView === 'list') {
-                        // Don't automatically switch back to kanban on desktop
+                    // Apply mobile layout changes on resize
+                    if (this.currentView === 'kanban') {
+                        this.applyMobileKanbanLayout();
                     }
                 });
+
+                // Initialize mobile kanban scroll
+                this.initializeMobileKanban();
             }
 
             switchToKanbanView() {
@@ -713,13 +973,14 @@
                 document.getElementById('kanbanViewBtn').classList.add('active');
                 document.getElementById('listViewBtn').classList.remove('active');
 
-                // Show/hide view toggle buttons on mobile
+                // Always show view toggle buttons
                 const viewToggle = document.querySelector('.btn-group[role="group"]');
-                if (window.innerWidth <= 768) {
-                    viewToggle.style.display = 'none';
-                } else {
+                if (viewToggle) {
                     viewToggle.style.display = 'flex';
                 }
+
+                // Apply mobile kanban layout
+                this.applyMobileKanbanLayout();
             }
 
             switchToListView() {
@@ -731,13 +992,107 @@
                 document.getElementById('kanbanViewBtn').classList.remove('active');
                 document.getElementById('listViewBtn').classList.add('active');
 
-                // Show/hide view toggle buttons on mobile
+                // Always show view toggle buttons
                 const viewToggle = document.querySelector('.btn-group[role="group"]');
-                if (window.innerWidth <= 768) {
-                    viewToggle.style.display = 'none';
-                } else {
+                if (viewToggle) {
                     viewToggle.style.display = 'flex';
                 }
+            }
+
+            // ===== MOBILE KANBAN FUNCTIONS =====
+            initializeMobileKanban() {
+                // Add touch support for mobile kanban
+                if (window.innerWidth <= 768) {
+                    this.addTouchSupport();
+                }
+            }
+
+            applyMobileKanbanLayout() {
+                const kanbanBoard = document.getElementById('kanbanBoard');
+                if (!kanbanBoard) return;
+
+                if (window.innerWidth <= 768) {
+                    // Mobile: Use horizontal scroll layout
+                    kanbanBoard.classList.add('kanban-mobile-scroll');
+                    kanbanBoard.style.display = 'flex';
+                    kanbanBoard.style.overflowX = 'auto';
+                    kanbanBoard.style.gap = '1rem';
+                    kanbanBoard.style.paddingBottom = '1rem';
+                    kanbanBoard.style.webkitOverflowScrolling = 'touch';
+                    kanbanBoard.style.gridTemplateColumns = 'none';
+                } else {
+                    // Desktop: Use grid layout
+                    kanbanBoard.classList.remove('kanban-mobile-scroll');
+                    kanbanBoard.style.display = 'grid';
+                    kanbanBoard.style.overflowX = 'visible';
+                    kanbanBoard.style.gap = '';
+                    kanbanBoard.style.paddingBottom = '';
+                    kanbanBoard.style.webkitOverflowScrolling = '';
+                    kanbanBoard.style.gridTemplateColumns = 'repeat(5, 1fr)';
+                }
+
+                // Apply mobile column styles
+                const columns = kanbanBoard.querySelectorAll('.kanban-col');
+                columns.forEach(col => {
+                    if (window.innerWidth <= 768) {
+                        col.style.flex = '0 0 280px';
+                        col.style.minWidth = '280px';
+                        col.style.marginBottom = '0';
+                        col.style.width = '280px';
+                    } else {
+                        col.style.flex = '';
+                        col.style.minWidth = '';
+                        col.style.marginBottom = '';
+                        col.style.width = '';
+                    }
+                });
+            }
+
+            addTouchSupport() {
+                const kanbanBoard = document.getElementById('kanbanBoard');
+                if (!kanbanBoard) return;
+
+                let startX = 0;
+                let scrollLeft = 0;
+                let isDown = false;
+
+                kanbanBoard.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    kanbanBoard.classList.add('active');
+                    startX = e.pageX - kanbanBoard.offsetLeft;
+                    scrollLeft = kanbanBoard.scrollLeft;
+                });
+
+                kanbanBoard.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    kanbanBoard.classList.remove('active');
+                });
+
+                kanbanBoard.addEventListener('mouseup', () => {
+                    isDown = false;
+                    kanbanBoard.classList.remove('active');
+                });
+
+                kanbanBoard.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - kanbanBoard.offsetLeft;
+                    const walk = (x - startX) * 2;
+                    kanbanBoard.scrollLeft = scrollLeft - walk;
+                });
+
+                // Touch events for mobile
+                kanbanBoard.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].pageX - kanbanBoard.offsetLeft;
+                    scrollLeft = kanbanBoard.scrollLeft;
+                });
+
+                kanbanBoard.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const x = e.touches[0].pageX - kanbanBoard.offsetLeft;
+                    const walk = (x - startX) * 2;
+                    kanbanBoard.scrollLeft = scrollLeft - walk;
+                });
             }
 
             // ===== EVENT BINDING =====
@@ -749,6 +1104,35 @@
                 document.getElementById('dealForm')?.addEventListener('submit', (e) => this.handleFormSubmit(e));
                 document.getElementById('addItemBtn')?.addEventListener('click', () => this.addItemRow());
                 document.getElementById('itemsContainer')?.addEventListener('click', (e) => this.handleItemRemoval(e));
+                document.addEventListener('click', (e) => {
+                    // Handle card click for viewing details
+                    if (e.target.closest('.deal-content')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const content = e.target.closest('.deal-content');
+                        const url = content.dataset.url;
+                        if (url) window.location.href = url;
+                    }
+
+                    // Handle edit button
+                    if (e.target.closest('.edit-deal-btn')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const btn = e.target.closest('.edit-deal-btn');
+                        const dealId = btn.dataset.id;
+                        if (dealId) this.editDeal(dealId);
+                    }
+
+                    // Existing duplicate button handler
+                    if (e.target.closest('.duplicate-deal-btn')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const btn = e.target.closest('.duplicate-deal-btn');
+                        const dealId = btn.dataset.id;
+                        if (dealId) this.duplicateDeal(dealId);
+                    }
+                });
+
 
                 const dealModalEl = document.getElementById('dealModal');
                 if (dealModalEl) {
@@ -764,6 +1148,11 @@
                             form.action = "{{ route('deals.store') }}";
                             const methodInput = form.querySelector('input[name="_method"]');
                             if (methodInput) methodInput.remove();
+                        }
+                        const modalTitle = document.getElementById('dealModalLabel');
+                        if (modalTitle) {
+                            modalTitle.innerHTML =
+                                '<i class="fas fa-plus me-2" aria-hidden="true"></i>Tambah Deal Baru';
                         }
                     });
                 }
@@ -894,19 +1283,45 @@
                     console.warn('SortableJS not found. Drag & drop disabled.');
                     return;
                 }
+
                 const kanbanBodies = document.querySelectorAll('.kanban-body');
                 kanbanBodies.forEach(body => {
                     new Sortable(body, {
                         group: {
                             name: 'kanban',
-                            pull: true,
+                            pull: (to, from, dragEl) => {
+                                const stage = dragEl.dataset.stage;
+
+                                // Check if expired
+                                const expiredBadge = dragEl.querySelector('.badge.bg-danger');
+                                const isExpired = expiredBadge && expiredBadge.textContent.includes(
+                                    'Expired');
+
+                                // Prevent dragging from Won, Lost, or Expired
+                                if (stage === 'won' || stage === 'lost' || isExpired) {
+                                    return false;
+                                }
+                                return true;
+                            },
                             put: true
                         },
                         animation: 150,
                         ghostClass: 'sortable-ghost',
                         chosenClass: 'sortable-chosen',
                         dragClass: 'sortable-drag',
-                        onStart: () => this.handleDragStart(),
+                        filter: '.no-drag',
+                        onStart: (evt) => {
+                            const stage = evt.item.dataset.stage;
+                            const expiredBadge = evt.item.querySelector('.badge.bg-danger');
+                            const isExpired = expiredBadge && expiredBadge.textContent.includes(
+                                'Expired');
+
+                            if (stage === 'won' || stage === 'lost' || isExpired) {
+                                evt.preventDefault();
+                                return false;
+                            }
+                            this.handleDragStart();
+                        },
                         onEnd: () => this.handleDragEnd(),
                         onAdd: (evt) => this.handleCardMove(evt),
                     });
@@ -931,11 +1346,17 @@
                 const fromStage = card.dataset.stage || (fromColumn ? fromColumn.dataset.stage : null);
                 const toStage = toColumn ? toColumn.dataset.stage : null;
 
+                if (!this.isValidStageTransition(fromStage, toStage, card)) {
+                    this.revertCardMove(card, fromBody, evt.oldIndex);
+                    return;
+                }
+
                 if (!this.isValidStageTransition(fromStage, toStage)) {
                     this.revertCardMove(card, fromBody, evt.oldIndex);
                     this.showError('Perpindahan stage tidak valid. Deal hanya bisa maju ke stage berikutnya.');
                     return;
                 }
+
                 this.showLoading(true);
                 try {
                     const response = await fetch(`/deals/${encodeURIComponent(card.dataset.id)}`, {
@@ -972,11 +1393,51 @@
                 }
             }
 
-            isValidStageTransition(fromStage, toStage) {
+            isValidStageTransition(fromStage, toStage, card) {
+                // Normalize stages to lowercase
+                fromStage = (fromStage || '').toLowerCase();
+                toStage = (toStage || '').toLowerCase();
+
+                // Check if card is expired
+                const expiredBadge = card ? card.querySelector('.badge.bg-danger') : null;
+                const isExpired = expiredBadge && expiredBadge.textContent.includes('Expired');
+
+                if (isExpired) {
+                    this.showError(
+                        'Deal yang sudah expired tidak dapat dipindahkan ke stage lain. Silakan perpanjang masa berlaku terlebih dahulu.'
+                    );
+                    return false;
+                }
+
+                // Won and Lost cannot move to any stage
+                if (fromStage === 'won') {
+                    this.showError('Deal yang sudah WON tidak dapat dipindahkan ke stage lain.');
+                    return false;
+                }
+
+                if (fromStage === 'lost') {
+                    this.showError('Deal yang sudah LOST tidak dapat dipindahkan ke stage lain.');
+                    return false;
+                }
+
+                // Allow moving to lost from any stage (except won/lost)
+                if (toStage === 'lost') {
+                    return true;
+                }
+
+                // Normal progression: only allow moving to next stage
                 const fromIndex = this.STAGES.indexOf(fromStage);
                 const toIndex = this.STAGES.indexOf(toStage);
-                return toIndex === fromIndex + 1;
+
+                // Must move exactly one stage forward (or to lost)
+                if (toIndex !== fromIndex + 1) {
+                    this.showError('Deal hanya bisa maju ke stage berikutnya atau langsung ke LOST.');
+                    return false;
+                }
+
+                return true;
             }
+
             revertCardMove(card, originalBody, originalIndex) {
                 const referenceNode = originalBody.children[originalIndex] || null;
                 originalBody.insertBefore(card, referenceNode);
@@ -1012,6 +1473,113 @@
 
                 new bootstrap.Modal(document.getElementById('dealModal')).show();
                 setTimeout(() => document.getElementById('notes')?.focus(), 200);
+            }
+
+            openModalForDuplicate(dealData) {
+                this.mode = 'create';
+                this.pendingUpdate = null;
+
+                // Reset form first
+                this.resetForm();
+
+                // Set mode to create and update form action
+                const form = document.getElementById('dealForm');
+                if (form) {
+                    form.action = "{{ route('deals.store') }}";
+                    const methodInput = form.querySelector('input[name="_method"]');
+                    if (methodInput) methodInput.remove();
+                }
+
+                // Fill form with duplicated data
+                this.fillFormFromDealData(dealData);
+
+                // Ensure stage is set to MAPPING
+                const stageSelect = document.getElementById('stageSelect');
+                if (stageSelect) {
+                    stageSelect.value = 'MAPPING';
+                    stageSelect.disabled = false;
+                }
+                const stageHidden = document.getElementById('stage_hidden');
+                if (stageHidden) stageHidden.value = 'mapping';
+
+                // Update modal title
+                const modalTitle = document.getElementById('dealModalLabel');
+                if (modalTitle) {
+                    modalTitle.innerHTML = '<i class="fas fa-copy me-2" aria-hidden="true"></i>Duplikasi Deal';
+                }
+
+                // Handle stage visibility
+                this.handleStageChange('MAPPING');
+
+                // Show the modal
+                new bootstrap.Modal(document.getElementById('dealModal')).show();
+
+                // Focus on deal name for editing
+                setTimeout(() => {
+                    const dealNameInput = document.getElementById('dealName');
+                    if (dealNameInput) {
+                        dealNameInput.select();
+                        dealNameInput.focus();
+                    }
+                }, 200);
+            }
+
+            openModalForEdit(dealData) {
+                this.mode = 'update';
+                this.pendingUpdate = null;
+                this.hasSubmitted = false;
+
+                // Reset form first
+                this.resetForm();
+
+                // Fill form with deal data
+                this.fillFormFromDealData(dealData);
+
+                // Setup form for update
+                const form = document.getElementById('dealForm');
+                if (form) {
+                    form.action = `/deals/${encodeURIComponent(dealData.deals_id)}`;
+                    let methodInput = form.querySelector('input[name="_method"]');
+                    if (!methodInput) {
+                        methodInput = document.createElement('input');
+                        methodInput.type = 'hidden';
+                        methodInput.name = '_method';
+                        methodInput.value = 'PATCH';
+                        form.appendChild(methodInput);
+                    } else {
+                        methodInput.value = 'PATCH';
+                    }
+                }
+
+                // Lock stage to current stage (no stage change in edit)
+                const currentStage = (dealData.stage || 'mapping').toLowerCase();
+                const stageSelect = document.getElementById('stageSelect');
+                if (stageSelect) {
+                    while (stageSelect.options.length) stageSelect.remove(0);
+                    stageSelect.add(new Option(currentStage.toUpperCase(), currentStage.toUpperCase(), true, true));
+                    stageSelect.disabled = true;
+                }
+
+                const stageHidden = document.getElementById('stage_hidden');
+                if (stageHidden) stageHidden.value = currentStage;
+
+                // Update modal title
+                const modalTitle = document.getElementById('dealModalLabel');
+                if (modalTitle) {
+                    modalTitle.innerHTML = '<i class="fas fa-edit me-2" aria-hidden="true"></i>Edit Deal';
+                }
+
+                // Handle stage visibility
+                this.handleStageChange(currentStage.toUpperCase());
+
+                // Show the modal
+                new bootstrap.Modal(document.getElementById('dealModal')).show();
+
+                // Focus on deal name
+                setTimeout(() => {
+                    const dealNameInput = document.getElementById('dealName');
+                    if (dealNameInput) dealNameInput.focus();
+                }, 200);
             }
 
             fillFormFromDealData(dealData) {
@@ -1346,6 +1914,68 @@
                 this.showSuccess('Stage berhasil diupdate');
             }
 
+            async duplicateDeal(dealId) {
+                this.showLoading(true);
+
+                try {
+                    const response = await fetch(`/deals/${encodeURIComponent(dealId)}/duplicate`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const result = await response.json();
+
+                    if (result.ok) {
+                        this.openModalForDuplicate(result.deal);
+                    } else {
+                        throw new Error(result.message || 'Gagal mendapatkan data deal');
+                    }
+                } catch (error) {
+                    console.error('Duplication error:', error);
+                    this.showError('Gagal menduplikasi deal: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async editDeal(dealId) {
+                this.showLoading(true);
+
+                try {
+                    const response = await fetch(`/deals/${encodeURIComponent(dealId)}/edit-data`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const result = await response.json();
+
+                    if (result.ok) {
+                        this.openModalForEdit(result.deal);
+                    } else {
+                        throw new Error(result.message || 'Gagal mendapatkan data deal');
+                    }
+                } catch (error) {
+                    console.error('Edit error:', error);
+                    this.showError('Gagal membuka edit deal: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
             revertPendingUpdate() {
                 const {
                     card,
@@ -1583,11 +2213,17 @@
                     const data = e.params.data || {};
                     document.getElementById('store_id').value = data.id || '';
                     document.getElementById('store_name').value = data.text || '';
+
+                    // Reset dan reload salpers berdasarkan store yang dipilih
+                    this.reloadSalesSelect();
                 });
 
                 $select.on('select2:clear', () => {
                     document.getElementById('store_id').value = '';
                     document.getElementById('store_name').value = '';
+
+                    // Reset salpers ketika store di-clear
+                    this.reloadSalesSelect();
                 });
 
                 console.log('Select2 initialized for #storeSelect at', ajaxUrl);
@@ -1664,9 +2300,13 @@
                         type: 'GET',
                         dataType: 'json',
                         delay: 250,
-                        data: params => ({
-                            q: params.term || ''
-                        }),
+                        data: params => {
+                            const storeId = document.getElementById('store_id').value;
+                            return {
+                                q: params.term || '',
+                                store_id: storeId || ''
+                            };
+                        },
                         processResults: data => data,
                         cache: true,
                     },
@@ -1688,6 +2328,21 @@
                 });
 
                 console.log('Select2 initialized (multi) for Sales at', ajaxUrl);
+            }
+
+            // ===== RELOAD SALES SELECT =====
+            reloadSalesSelect() {
+                if (!window.jQuery) return;
+                const $ = window.jQuery;
+                const $select = $('#salesSelect');
+                if (!$select.length) return;
+
+                // Clear current selection
+                $select.val(null).trigger('change');
+
+                // Clear cache and reload options
+                $select.select2('destroy');
+                this.initSalesSelect();
             }
 
             // ===== ITEM SELECT2 HELPERS =====
@@ -1956,6 +2611,30 @@
             } catch (err) {
                 console.error(err);
                 alert('Gagal generate quotation: ' + err.message);
+            }
+        });
+        document.getElementById('toggleFilterBtn')?.addEventListener('click', function() {
+            const filterSection = document.getElementById('filterSection');
+            const buttonText = document.getElementById('filterButtonText');
+
+            if (filterSection.classList.contains('show')) {
+                filterSection.classList.remove('show');
+                buttonText.textContent = 'Show Filters';
+            } else {
+                filterSection.classList.add('show');
+                buttonText.textContent = 'Hide Filters';
+            }
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasActiveFilters = Array.from(urlParams.entries()).some(([key, value]) =>
+                value && key !== 'page' && key !== 'per_page'
+            );
+
+            if (hasActiveFilters) {
+                document.getElementById('filterSection')?.classList.add('show');
+                const buttonText = document.getElementById('filterButtonText');
+                if (buttonText) buttonText.textContent = 'Hide Filters';
             }
         });
     </script>

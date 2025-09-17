@@ -107,9 +107,12 @@
                         <div class="form-group">
                             <label class="label">Store</label>
                             <div class="input-group">
-                                <select class="custom-select custom-select-sm @error('site_id') is-invalid @enderror"
-                                    id="site_id" name="site_id">
+                                <select class="custom-select custom-select-sm @error('store_id') is-invalid @enderror"
+                                    id="store_id" name="store_id">
                                     <option value="">Select a store</option>
+                                    @foreach ($stores as $store)
+                                        <option value="{{ $store->store_id }}">{{ $store->store_name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
@@ -157,7 +160,7 @@
 
             $('#region_id').change(function() {
                 var region_id = $(this).val();
-                var siteSelect = $('#site_id');
+                var siteSelect = $('#store_id');
 
                 if (region_id) {
                     $.ajax({
@@ -178,7 +181,7 @@
                     });
                 } else {
                     siteSelect.empty();
-                    siteSelect.append('<option value="">Select a region</option>');
+                    siteSelect.append('<option value="">Select a store</option>');
                 }
             });
         });

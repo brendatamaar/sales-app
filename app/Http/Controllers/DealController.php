@@ -28,8 +28,8 @@ class DealController extends Controller
     const ALLOWED_STAGES = ['mapping', 'visit', 'quotation', 'won', 'lost'];
 
     const STAGE_PROGRESSION = [
-        'mapping' => ['visit'],
-        'visit' => ['quotation'],
+        'mapping' => ['visit', 'lost'],
+        'visit' => ['quotation', 'lost'],
         'quotation' => ['won', 'lost'],
         'won' => [],
         'lost' => [],
@@ -63,7 +63,7 @@ class DealController extends Controller
             ->when($searchQuery, fn($q) => $q->search($searchQuery))
             ->when($stage, fn($q) => $q->byStage($stage))
 
-            // --- NEW: field filters ---
+            // --- field filters ---
             ->when(!empty($filters['deals_id']), function ($q) use ($filters) {
                 $q->where('deals_id', 'like', '%' . $filters['deals_id'] . '%');
             })
@@ -108,6 +108,12 @@ class DealController extends Controller
 
             ->latest('updated_at');
 
+        // store filter for role
+        $user = auth()->user();
+        if ($user && in_array($user->role, ['staff', 'leaders', 'manager']) && $user->store_id) {
+            $dealsQuery->where('store_id', $user->store_id);
+        }
+
         $deals = $dealsQuery
             ->paginate($perPage)
             ->appends($request->query());
@@ -141,7 +147,15 @@ class DealController extends Controller
 
     public function expired(Request $request)
     {
-        $all = Deal::orderBy('created_date', 'desc')->get();
+        $query = Deal::query();
+
+        // Add store filtering
+        $user = auth()->user();
+        if ($user && in_array($user->role, ['staff', 'leaders', 'manager']) && $user->store_id) {
+            $query->where('store_id', $user->store_id);
+        }
+
+        $all = $query->orderBy('created_date', 'desc')->get();
 
         // Use your accessor `is_expired` to filter in PHP
         $deals = $all->filter(function ($deal) {
@@ -154,9 +168,14 @@ class DealController extends Controller
 
     public function needHargaApproval(Request $request)
     {
-        $deals = Deal::needHargaApproval()
-            ->orderBy('created_date', 'desc')
-            ->get();
+        $query = Deal::needHargaApproval();
+
+        $user = auth()->user();
+        if ($user && in_array($user->role, ['staff', 'leaders', 'manager']) && $user->store_id) {
+            $query->where('store_id', $user->store_id);
+        }
+
+        $deals = $query->orderBy('created_date', 'desc')->get();
 
         return view('deals.need_harga_approval', compact('deals'));
     }
@@ -257,6 +276,11 @@ class DealController extends Controller
             })
             ->latest('updated_at');
 
+        $user = auth()->user();
+        if ($user && in_array($user->role, ['staff', 'leaders', 'manager']) && $user->store_id) {
+            $q->where('store_id', $user->store_id);
+        }
+
         $rows = $q->get();
 
         $dealsByStage = [];
@@ -286,8 +310,14 @@ class DealController extends Controller
 
     private function getDealStatistics($search = null, $stageFilter = null)
     {
-        $base = Deal::query()
-            ->when($search, fn($q) => $q->search($search))
+        $base = Deal::query();
+
+        $user = auth()->user();
+        if ($user && in_array($user->role, ['staff', 'leader', 'manager']) && $user->store_id) {
+            $base->where('store_id', $user->store_id);
+        }
+
+        $base->when($search, fn($q) => $q->search($search))
             ->when($stageFilter, fn($q) => $q->byStage($stageFilter));
 
         return [
@@ -672,9 +702,17 @@ class DealController extends Controller
     {
         if ($currentStage === $newStage)
             return;
+
+        // Won and Lost stages cannot move to any other stage
+        if (in_array($currentStage, ['won', 'lost'])) {
+            $stageLabel = $currentStage === 'won' ? 'WON' : 'LOST';
+            throw new Exception("Deal yang sudah {$stageLabel} tidak dapat dipindahkan ke stage lain.");
+        }
+
+        // Check allowed transitions
         $allowed = self::STAGE_PROGRESSION[$currentStage] ?? [];
         if (!in_array($newStage, $allowed, true)) {
-            throw new Exception("Invalid stage progression from '{$currentStage}' to '{$newStage}'. Allowed: " . implode(', ', $allowed));
+            throw new Exception("Perpindahan stage tidak valid dari '{$currentStage}' ke '{$newStage}'. Stage yang diperbolehkan: " . implode(', ', $allowed));
         }
     }
 
@@ -751,6 +789,14 @@ class DealController extends Controller
     {
         try {
             $deal = Deal::findOrFail($id);
+            
+            if ($deal->is_expired) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Deal yang sudah expired tidak dapat dipindahkan ke stage lain.'
+                ], 422);
+            }
+
             $oldStage = $deal->stage;
             $newStage = strtolower($request->input('stage', $oldStage));
 
@@ -975,5 +1021,133 @@ class DealController extends Controller
         });
 
         return back()->with('success', "Deal {$deal->deals_id} rejected (Harga Khusus).");
+    }
+
+    public function getDealForDuplicate(string $id)
+    {
+        try {
+            $deal = Deal::with(['dealItems.item', 'store', 'customer'])->findOrFail($id);
+
+            // Prepare data for duplication
+            $duplicateData = [
+                'deals_id' => $this->generateUniqueDealsId(),
+                'deal_name' => $deal->deal_name . ' (Copy)',
+                'stage' => 'mapping',
+                'deal_size' => $deal->deal_size,
+                'created_date' => now()->format('Y-m-d'),
+
+                // Store info
+                'store_id' => $deal->store_id,
+                'store_name' => $deal->store_name,
+                'email' => $deal->email,
+
+                // Customer info
+                'id_cust' => $deal->id_cust,
+                'cust_name' => $deal->cust_name,
+                'no_telp_cust' => $deal->no_telp_cust,
+                'alamat_lengkap' => $deal->alamat_lengkap,
+
+                // Other fields
+                'notes' => $deal->notes,
+                'payment_term' => $deal->payment_term,
+
+                // Items
+                'items' => $deal->dealItems->map(function ($item) {
+                    return [
+                        'item_no' => $item->item_no,
+                        'item_name' => $item->item->item_name ?? 'Unknown Item',
+                        'quantity' => $item->quantity,
+                        'unit_price' => $item->unit_price,
+                        'discount_percent' => $item->discount_percent,
+                        'uom' => $item->item->uom ?? '',
+                    ];
+                })->toArray(),
+
+                // Include customer object if exists
+                'customer' => $deal->customer ? [
+                    'id' => $deal->customer->id ?? $deal->customer->id_cust ?? null,
+                    'name' => $deal->customer->name ?? $deal->customer->cust_name ?? null,
+                    'phone' => $deal->customer->phone ?? $deal->customer->no_telp ?? null,
+                    'address' => $deal->customer->address ?? $deal->customer->alamat ?? null,
+                ] : null,
+            ];
+
+            return response()->json([
+                'ok' => true,
+                'deal' => $duplicateData
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to get deal for duplication', ['deals_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Deal not found'], 404);
+        }
+    }
+
+    public function getEditData(string $id)
+    {
+        try {
+            $deal = Deal::with(['dealItems.item', 'store', 'customer', 'points'])->findOrFail($id);
+
+            // Get salper IDs from points table
+            $salperIds = $deal->points->pluck('salper_id')->unique()->values()->toArray();
+
+            return response()->json([
+                'ok' => true,
+                'deal' => [
+                    'deals_id' => $deal->deals_id,
+                    'deal_name' => $deal->deal_name,
+                    'deal_size' => $deal->deal_size,
+                    'created_date' => $deal->created_date ? $deal->created_date->format('Y-m-d') : null,
+                    'closed_date' => $deal->closed_date ? $deal->closed_date->format('Y-m-d') : null,
+                    'stage' => $deal->stage,
+
+                    // Store
+                    'store_id' => $deal->store_id,
+                    'store_name' => $deal->store_name,
+                    'email' => $deal->email,
+
+                    // Customer
+                    'id_cust' => $deal->id_cust,
+                    'cust_name' => $deal->cust_name,
+                    'no_telp_cust' => $deal->no_telp_cust,
+                    'alamat_lengkap' => $deal->alamat_lengkap,
+                    'customer' => $deal->customer ? [
+                        'id' => $deal->customer->id ?? $deal->customer->id_cust ?? null,
+                        'name' => $deal->customer->name ?? $deal->customer->cust_name ?? null,
+                        'phone' => $deal->customer->phone ?? $deal->customer->no_telp ?? null,
+                        'address' => $deal->customer->address ?? $deal->customer->alamat ?? null,
+                    ] : null,
+
+                    'notes' => $deal->notes,
+
+                    // Payment & quotation
+                    'payment_term' => $deal->payment_term,
+                    'quotation_exp_date' => $deal->quotation_exp_date ? $deal->quotation_exp_date->format('Y-m-d') : null,
+                    'status_approval_harga' => $deal->status_approval_harga,
+
+                    // Receipt / Lost
+                    'receipt_number' => $deal->receipt_number,
+                    'lost_reason' => $deal->lost_reason,
+
+                    // Salpers
+                    'salper_ids' => $salperIds,
+
+                    // Items
+                    'items' => $deal->dealItems->map(function ($item) {
+                        return [
+                            'item_no' => $item->item_no,
+                            'item_name' => $item->item->item_name ?? 'Unknown Item',
+                            'quantity' => $item->quantity,
+                            'unit_price' => $item->unit_price,
+                            'discount_percent' => $item->discount_percent,
+                            'uom' => $item->item->uom ?? '',
+                        ];
+                    })->toArray(),
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json(['ok' => false, 'message' => 'Deal not found: ' . $e->getMessage()], 404);
+        }
     }
 }

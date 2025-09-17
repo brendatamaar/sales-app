@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use App\Models\Deal;
+use App\Models\Store;
+use App\Models\DataCustomer;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -25,6 +27,35 @@ class DashboardController extends Controller
             'won' => (clone $base)->where('stage', 'won')->count(),
             'lost' => (clone $base)->where('stage', 'lost')->count(),
         ];
+
+        // === Summary berdasarkan history stage yang pernah dilalui ===
+        // Ambil semua deals yang sesuai dengan filter
+        $dealIds = (clone $base)->pluck('deals_id');
+
+        // Hitung jumlah deals yang pernah melalui setiap stage berdasarkan history
+        $history_summary = [
+            'mapping' => 0,
+            'visit' => 0,
+            'quotation' => 0,
+            'won' => 0,
+            'lost' => 0,
+        ];
+
+        if ($dealIds->isNotEmpty()) {
+            // Query untuk menghitung berapa banyak deals yang pernah melalui setiap stage
+            $stageHistory = DB::table('deals_reports')
+                ->whereIn('deals_id', $dealIds)
+                ->select('stage', DB::raw('COUNT(DISTINCT deals_id) as total_deals'))
+                ->groupBy('stage')
+                ->get();
+
+            // Populate history summary
+            foreach ($stageHistory as $stage) {
+                if (isset($history_summary[$stage->stage])) {
+                    $history_summary[$stage->stage] = $stage->total_deals;
+                }
+            }
+        }
 
         // === Category leader per deal ===
         $dealRows = (clone $base)->get();                         // deals after filters
@@ -152,15 +183,23 @@ class DashboardController extends Controller
             'user_id' => $user_id,
         ];
 
+        $stores = Store::orderBy('store_name')->get(['store_id', 'store_name', 'store_address']);
+        $customers = DataCustomer::with('store')->orderBy('cust_name')->get([
+            'id_cust', 'cust_name', 'cust_address', 'no_telp_cust', 'store_id', 'latitude', 'longitude'
+        ]);
+
         return view('dashboard', compact(
             'total_datas',
+            'history_summary',
             'categoryBar',
             'filters',
             'topSalpers',
             'topDeals',
             'topCustomers',
             'effectivity',
-            'lostReasonChart'
+            'lostReasonChart',
+            'stores',
+            'customers'
         ));
     }
 }

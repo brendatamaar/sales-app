@@ -78,9 +78,14 @@ class SalperController extends Controller
     public function search(Request $request)
     {
         $term = $request->get('q', '');
+        $storeId = $request->get('store_id', '');
+
         $query = Salper::with('store')
             ->when($term, function ($q) use ($term) {
                 $q->where('salper_name', 'like', '%' . $term . '%');
+            })
+            ->when($storeId, function ($q) use ($storeId) {
+                $q->where('store_id', $storeId);
             })
             ->limit(20)
             ->get();
