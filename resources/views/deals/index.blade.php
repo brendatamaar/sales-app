@@ -947,385 +947,331 @@
     <script>
         class DealsKanban {
             constructor() {
-                this.currentView = window.innerWidth <= 768 ? 'list' : 'kanban';
-                this.initializeView();
-                this.STAGES = ['mapping', 'visit', 'quotation', 'won', 'lost'];
-                this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-                this.itemIndex = 1;
-                this.mode = 'create';
-                this.pendingUpdate = null;
-                this.hasSubmitted = false;
+                // Configuration
+                this.config = {
+                    stages: ['mapping', 'visit', 'quotation', 'won', 'lost'],
+                    stageConfig: {
+                        mapping: {
+                            label: 'MAPPING',
+                            color: 'bg-primary'
+                        },
+                        visit: {
+                            label: 'VISIT',
+                            color: 'bg-info'
+                        },
+                        quotation: {
+                            label: 'QUOTATION',
+                            color: 'bg-warning'
+                        },
+                        won: {
+                            label: 'WON',
+                            color: 'bg-success'
+                        },
+                        lost: {
+                            label: 'LOST',
+                            color: 'bg-danger'
+                        }
+                    }
+                };
+
+                // State management
+                this.state = {
+                    currentView: 'kanban',
+                    mode: 'create',
+                    pendingUpdate: null,
+                    hasSubmitted: false,
+                    itemIndex: 1,
+                    csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                };
+
+                // DOM Elements cache
+                this.elements = this.cacheElements();
+
                 this.init();
             }
 
-            // ===== INITIALIZATION =====
+            // ==================== INITIALIZATION ====================
             init() {
+                this.initializeView();
                 this.bindEvents();
-                this.initializeSortable();
-                this.initializeForm();
+                this.initializeDragDrop();
+                this.initializeSelects();
                 this.setupItemCalculations();
-                this.initStoreSelect();
-                this.initCustomerSelect();
-                this.initAllItemSelects();
-                this.initSalesSelect();
+                this.initializeForm();
             }
 
-            // ===== SET VIEW =====
+            cacheElements() {
+                return {
+                    // Views
+                    kanbanBoard: document.getElementById('kanbanBoard'),
+                    listView: document.getElementById('listView'),
+
+                    // Buttons
+                    addDealBtn: document.getElementById('addDealBtn'),
+                    kanbanViewBtn: document.getElementById('kanbanViewBtn'),
+                    listViewBtn: document.getElementById('listViewBtn'),
+                    generateDealIdBtn: document.getElementById('generateDealId'),
+                    addItemBtn: document.getElementById('addItemBtn'),
+                    generateQuotationBtn: document.getElementById('generateQuotationBtn'),
+                    toggleFilterBtn: document.getElementById('toggleFilterBtn'),
+                    downloadBtn: document.getElementById('downloadBtn'),
+                    deleteBtn: document.getElementById('deleteBtn'),
+
+                    // Forms
+                    dealForm: document.getElementById('dealForm'),
+                    dealModal: document.getElementById('dealModal'),
+
+                    // Form fields
+                    stageSelect: document.getElementById('stageSelect'),
+                    dealId: document.getElementById('dealId'),
+                    dealsIdHidden: document.getElementById('deals_id'),
+                    stageHidden: document.getElementById('stage_hidden'),
+                    dealName: document.getElementById('dealName'),
+                    dealSize: document.getElementById('dealSize'),
+                    createdDate: document.getElementById('createdDate'),
+
+                    // Containers
+                    itemsContainer: document.getElementById('itemsContainer'),
+                    filterSection: document.getElementById('filterSection'),
+                    loadingSpinner: document.getElementById('loadingSpinner'),
+
+                    // Counters
+                    totalDealsCount: document.getElementById('totalDealsCount')
+                };
+            }
+
+            // ==================== VIEW MANAGEMENT ====================
             initializeView() {
-                // Always start with kanban view, apply mobile layout if needed
-                this.switchToKanbanView();
+                this.state.currentView = window.innerWidth <= 768 ? 'list' : 'kanban';
+                this.updateView();
 
-                window.addEventListener('resize', () => {
-                    // Apply mobile layout changes on resize
-                    if (this.currentView === 'kanban') {
-                        this.applyMobileKanbanLayout();
-                    }
-                });
-
-                // Initialize mobile kanban scroll
-                this.initializeMobileKanban();
+                window.addEventListener('resize', () => this.handleResize());
+                if (window.innerWidth <= 768) this.initializeMobileKanban();
             }
 
-            switchToKanbanView() {
-                this.currentView = 'kanban';
-                document.getElementById('kanbanBoard').classList.remove('d-none');
-                document.getElementById('listView').classList.add('d-none');
+            updateView() {
+                const isMobile = window.innerWidth <= 768;
 
-                // Update button states
-                document.getElementById('kanbanViewBtn').classList.add('active');
-                document.getElementById('listViewBtn').classList.remove('active');
-
-                // Always show view toggle buttons
-                const viewToggle = document.querySelector('.btn-group[role="group"]');
-                if (viewToggle) {
-                    viewToggle.style.display = 'flex';
-                }
-
-                // Apply mobile kanban layout
-                this.applyMobileKanbanLayout();
-            }
-
-            switchToListView() {
-                this.currentView = 'list';
-                document.getElementById('kanbanBoard').classList.add('d-none');
-                document.getElementById('listView').classList.remove('d-none');
-
-                // Update button states
-                document.getElementById('kanbanViewBtn').classList.remove('active');
-                document.getElementById('listViewBtn').classList.add('active');
-
-                // Always show view toggle buttons
-                const viewToggle = document.querySelector('.btn-group[role="group"]');
-                if (viewToggle) {
-                    viewToggle.style.display = 'flex';
+                if (this.state.currentView === 'kanban') {
+                    this.showKanban();
+                    if (isMobile) this.applyMobileKanbanLayout();
+                } else {
+                    this.showList();
                 }
             }
 
-            // ===== MOBILE KANBAN FUNCTIONS =====
-            initializeMobileKanban() {
-                // Add touch support for mobile kanban
-                if (window.innerWidth <= 768) {
-                    this.addTouchSupport();
+            showKanban() {
+                this.elements.kanbanBoard?.classList.remove('d-none');
+                this.elements.listView?.classList.add('d-none');
+                this.elements.kanbanViewBtn?.classList.add('active');
+                this.elements.listViewBtn?.classList.remove('active');
+            }
+
+            showList() {
+                this.elements.kanbanBoard?.classList.add('d-none');
+                this.elements.listView?.classList.remove('d-none');
+                this.elements.kanbanViewBtn?.classList.remove('active');
+                this.elements.listViewBtn?.classList.add('active');
+            }
+
+            handleResize() {
+                if (this.state.currentView === 'kanban') {
+                    this.applyMobileKanbanLayout();
                 }
             }
 
             applyMobileKanbanLayout() {
-                const kanbanBoard = document.getElementById('kanbanBoard');
-                if (!kanbanBoard) return;
+                const board = this.elements.kanbanBoard;
+                if (!board) return;
 
-                if (window.innerWidth <= 768) {
-                    // Mobile: Use horizontal scroll layout
-                    kanbanBoard.classList.add('kanban-mobile-scroll');
-                    kanbanBoard.style.display = 'flex';
-                    kanbanBoard.style.overflowX = 'auto';
-                    kanbanBoard.style.gap = '1rem';
-                    kanbanBoard.style.paddingBottom = '1rem';
-                    kanbanBoard.style.webkitOverflowScrolling = 'touch';
-                    kanbanBoard.style.gridTemplateColumns = 'none';
+                const isMobile = window.innerWidth <= 768;
+
+                if (isMobile) {
+                    Object.assign(board.style, {
+                        display: 'flex',
+                        overflowX: 'auto',
+                        gap: '1rem',
+                        paddingBottom: '1rem',
+                        webkitOverflowScrolling: 'touch',
+                        gridTemplateColumns: 'none'
+                    });
+
+                    board.querySelectorAll('.kanban-col').forEach(col => {
+                        Object.assign(col.style, {
+                            flex: '0 0 280px',
+                            minWidth: '280px',
+                            width: '280px',
+                            marginBottom: '0'
+                        });
+                    });
                 } else {
-                    // Desktop: Use grid layout
-                    kanbanBoard.classList.remove('kanban-mobile-scroll');
-                    kanbanBoard.style.display = 'grid';
-                    kanbanBoard.style.overflowX = 'visible';
-                    kanbanBoard.style.gap = '';
-                    kanbanBoard.style.paddingBottom = '';
-                    kanbanBoard.style.webkitOverflowScrolling = '';
-                    kanbanBoard.style.gridTemplateColumns = 'repeat(5, 1fr)';
-                }
+                    Object.assign(board.style, {
+                        display: 'grid',
+                        overflowX: 'visible',
+                        gridTemplateColumns: 'repeat(5, 1fr)',
+                        gap: '',
+                        paddingBottom: ''
+                    });
 
-                // Apply mobile column styles
-                const columns = kanbanBoard.querySelectorAll('.kanban-col');
-                columns.forEach(col => {
-                    if (window.innerWidth <= 768) {
-                        col.style.flex = '0 0 280px';
-                        col.style.minWidth = '280px';
-                        col.style.marginBottom = '0';
-                        col.style.width = '280px';
-                    } else {
-                        col.style.flex = '';
-                        col.style.minWidth = '';
-                        col.style.marginBottom = '';
-                        col.style.width = '';
-                    }
-                });
+                    board.querySelectorAll('.kanban-col').forEach(col => {
+                        Object.assign(col.style, {
+                            flex: '',
+                            minWidth: '',
+                            width: '',
+                            marginBottom: ''
+                        });
+                    });
+                }
             }
 
-            addTouchSupport() {
-                const kanbanBoard = document.getElementById('kanbanBoard');
-                if (!kanbanBoard) return;
+            initializeMobileKanban() {
+                const board = this.elements.kanbanBoard;
+                if (!board) return;
 
+                let isDown = false;
                 let startX = 0;
                 let scrollLeft = 0;
-                let isDown = false;
 
-                kanbanBoard.addEventListener('mousedown', (e) => {
+                const handleStart = (pageX) => {
                     isDown = true;
-                    kanbanBoard.classList.add('active');
-                    startX = e.pageX - kanbanBoard.offsetLeft;
-                    scrollLeft = kanbanBoard.scrollLeft;
-                });
-
-                kanbanBoard.addEventListener('mouseleave', () => {
-                    isDown = false;
-                    kanbanBoard.classList.remove('active');
-                });
-
-                kanbanBoard.addEventListener('mouseup', () => {
-                    isDown = false;
-                    kanbanBoard.classList.remove('active');
-                });
-
-                kanbanBoard.addEventListener('mousemove', (e) => {
-                    if (!isDown) return;
-                    e.preventDefault();
-                    const x = e.pageX - kanbanBoard.offsetLeft;
-                    const walk = (x - startX) * 2;
-                    kanbanBoard.scrollLeft = scrollLeft - walk;
-                });
-
-                // Touch events for mobile
-                kanbanBoard.addEventListener('touchstart', (e) => {
-                    startX = e.touches[0].pageX - kanbanBoard.offsetLeft;
-                    scrollLeft = kanbanBoard.scrollLeft;
-                });
-
-                kanbanBoard.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    const x = e.touches[0].pageX - kanbanBoard.offsetLeft;
-                    const walk = (x - startX) * 2;
-                    kanbanBoard.scrollLeft = scrollLeft - walk;
-                });
-            }
-
-            // ===== EVENT BINDING =====
-            bindEvents() {
-                document.getElementById('addDealBtn')?.addEventListener('click', () => this.openAddModalCreate());
-                document.getElementById('stageSelect')?.addEventListener('change', (e) => this.handleStageChange(e
-                    .target.value));
-                document.getElementById('generateDealId')?.addEventListener('click', () => this.generateDealId());
-                document.getElementById('dealForm')?.addEventListener('submit', (e) => this.handleFormSubmit(e));
-                document.getElementById('addItemBtn')?.addEventListener('click', () => this.addItemRow());
-                document.getElementById('itemsContainer')?.addEventListener('click', (e) => this.handleItemRemoval(e));
-                document.addEventListener('click', (e) => {
-                    // Handle card click for viewing details
-                    if (e.target.closest('.deal-content')) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const content = e.target.closest('.deal-content');
-                        const url = content.dataset.url;
-                        if (url) window.location.href = url;
-                    }
-
-                    // Handle edit button
-                    if (e.target.closest('.edit-deal-btn')) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const btn = e.target.closest('.edit-deal-btn');
-                        const dealId = btn.dataset.id;
-                        if (dealId) this.editDeal(dealId);
-                    }
-
-                    // Existing duplicate button handler
-                    if (e.target.closest('.duplicate-deal-btn')) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const btn = e.target.closest('.duplicate-deal-btn');
-                        const dealId = btn.dataset.id;
-                        if (dealId) this.duplicateDeal(dealId);
-                    }
-                });
-
-
-                const dealModalEl = document.getElementById('dealModal');
-                if (dealModalEl) {
-                    dealModalEl.addEventListener('hidden.bs.modal', () => {
-                        if (this.mode === 'update' && this.pendingUpdate && !this.hasSubmitted) {
-                            this.revertPendingUpdate();
-                        }
-                        this.hasSubmitted = false;
-                        this.mode = 'create';
-
-                        const form = document.getElementById('dealForm');
-                        if (form) {
-                            form.action = "{{ route('deals.store') }}";
-                            const methodInput = form.querySelector('input[name="_method"]');
-                            if (methodInput) methodInput.remove();
-                        }
-                        const modalTitle = document.getElementById('dealModalLabel');
-                        if (modalTitle) {
-                            modalTitle.innerHTML =
-                                '<i class="fas fa-plus me-2" aria-hidden="true"></i>Tambah Deal Baru';
-                        }
-                    });
-                }
-
-                document.getElementById('dealSearchInput')?.addEventListener('input', (e) => this.handleSearch(e.target
-                    .value));
-
-                document.getElementById('btnRequestApprovalManager')?.addEventListener('click', () =>
-                    this.requestHargaKhusus()
-                );
-                document.getElementById('btnRequestApprovalRegionalManager')?.addEventListener('click', () =>
-                    this.requestHargaKhusus()
-                );
-
-                document.getElementById('btnApproveHargaKhusus')?.addEventListener('click', () => {
-                    this.updateHargaKhususStatus('APPROVED_HARGA_KHUSUS', 'Disetujui (Harga Khusus)',
-                        'bg-success');
-                });
-                document.getElementById('btnRejectHargaKhusus')?.addEventListener('click', () => {
-                    this.updateHargaKhususStatus('NOT_APPROVED_HARGA_KHUSUS', 'Tidak Disetujui (Harga Khusus)',
-                        'bg-danger');
-                });
-
-            }
-
-            // ===== CREATE FLOW =====
-            openAddModalCreate() {
-                this.mode = 'create';
-                this.pendingUpdate = null;
-
-                this.resetForm();
-                this.generateDealId();
-                this.setTodayDate();
-                this.setDefaultEmail();
-                this.handleStageChange('MAPPING');
-
-                const form = document.getElementById('dealForm');
-                if (form) form.action = "{{ route('deals.store') }}";
-
-                new bootstrap.Modal(document.getElementById('dealModal')).show();
-                setTimeout(() => document.getElementById('dealName')?.focus(), 200);
-            }
-
-            // ===== LIST VIEW =====
-            addCardToList(deal, redirectUrl) {
-                const tbody = document.getElementById('listTableBody');
-                if (!tbody) return;
-
-                const stageConfig = {
-                    'mapping': {
-                        'label': 'MAPPING',
-                        'color': 'bg-secondary'
-                    },
-                    'visit': {
-                        'label': 'VISIT',
-                        'color': 'bg-info'
-                    },
-                    'quotation': {
-                        'label': 'QUOTATION',
-                        'color': 'bg-warning'
-                    },
-                    'won': {
-                        'label': 'WON',
-                        'color': 'bg-success'
-                    },
-                    'lost': {
-                        'label': 'LOST',
-                        'color': 'bg-danger'
-                    }
+                    board.classList.add('active');
+                    startX = pageX - board.offsetLeft;
+                    scrollLeft = board.scrollLeft;
                 };
 
-                const stage = deal.stage || 'mapping';
-                const config = stageConfig[stage] || stageConfig['mapping'];
-                const dealSize = deal.deal_size ? `Rp ${this.formatCurrency(deal.deal_size)}` : 'Rp 0';
-                const createdDate = deal.created_at ? new Date(deal.created_at).toLocaleDateString('id-ID') : '-';
+                const handleMove = (pageX) => {
+                    if (!isDown) return;
+                    const x = pageX - board.offsetLeft;
+                    const walk = (x - startX) * 2;
+                    board.scrollLeft = scrollLeft - walk;
+                };
 
-                const row = `
-        <tr data-id="${deal.deals_id}" data-stage="${stage}">
-            <td>
-                <a href="${redirectUrl}" class="text-decoration-none">
-                    ${deal.deal_name}
-                </a>
-            </td>
-            <td>
-                <span class="badge ${config.color} text-white">
-                    ${config.label}
-                </span>
-            </td>
-            <td>${dealSize}</td>
-            <td>${deal.store_name || '-'}</td>
-            <td>${createdDate}</td>
-            <td>
-                <a href="${redirectUrl}" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-eye"></i>
-                </a>
-            </td>
-        </tr>
-    `;
+                const handleEnd = () => {
+                    isDown = false;
+                    board.classList.remove('active');
+                };
 
-                tbody.insertAdjacentHTML('afterbegin', row);
+                // Mouse events
+                board.addEventListener('mousedown', e => handleStart(e.pageX));
+                board.addEventListener('mousemove', e => {
+                    e.preventDefault();
+                    handleMove(e.pageX);
+                });
+                board.addEventListener('mouseup', handleEnd);
+                board.addEventListener('mouseleave', handleEnd);
+
+                // Touch events
+                board.addEventListener('touchstart', e => handleStart(e.touches[0].pageX));
+                board.addEventListener('touchmove', e => {
+                    e.preventDefault();
+                    handleMove(e.touches[0].pageX);
+                });
             }
 
-            handleSearch(query) {
-                const searchTerm = (query || '').toLowerCase().trim();
+            // ==================== EVENT BINDING ====================
+            bindEvents() {
+                // View toggles
+                this.elements.kanbanViewBtn?.addEventListener('click', () => {
+                    this.state.currentView = 'kanban';
+                    this.updateView();
+                });
 
-                if (this.currentView === 'kanban') {
-                    // Existing kanban search logic
-                    const cards = document.querySelectorAll('.kanban-card');
-                    cards.forEach(card => {
-                        const dealNameEl = card.querySelector('.fw-semibold');
-                        const dealName = dealNameEl ? dealNameEl.textContent.toLowerCase() : '';
-                        card.style.display = (!searchTerm || dealName.includes(searchTerm)) ? 'block' : 'none';
-                    });
-                } else {
-                    // List view search
-                    const rows = document.querySelectorAll('#listTableBody tr');
-                    rows.forEach(row => {
-                        const dealNameEl = row.querySelector('td:first-child a');
-                        const dealName = dealNameEl ? dealNameEl.textContent.toLowerCase() : '';
-                        row.style.display = (!searchTerm || dealName.includes(searchTerm)) ? 'table-row' :
-                            'none';
-                    });
+                this.elements.listViewBtn?.addEventListener('click', () => {
+                    this.state.currentView = 'list';
+                    this.updateView();
+                });
+
+                // Deal actions
+                this.elements.addDealBtn?.addEventListener('click', () => this.openCreateModal());
+                this.elements.generateDealIdBtn?.addEventListener('click', () => this.generateDealId());
+                this.elements.dealForm?.addEventListener('submit', e => this.handleFormSubmit(e));
+
+                // Stage change
+                this.elements.stageSelect?.addEventListener('change', e => this.handleStageChange(e.target.value));
+
+                // Item management
+                this.elements.addItemBtn?.addEventListener('click', () => this.addItemRow());
+                this.elements.itemsContainer?.addEventListener('click', e => {
+                    if (e.target.closest('[data-remove]')) {
+                        this.removeItemRow(e.target.closest('[data-remove]'));
+                    }
+                });
+
+                // Global click handlers
+                document.addEventListener('click', e => this.handleGlobalClick(e));
+
+                // Modal events
+                this.bindModalEvents();
+
+                // Filter toggle
+                this.elements.toggleFilterBtn?.addEventListener('click', () => this.toggleFilters());
+
+                // Other buttons
+                this.elements.generateQuotationBtn?.addEventListener('click', () => this.generateQuotation());
+
+                // Approval buttons
+                document.getElementById('btnRequestApprovalManager')?.addEventListener('click', () =>
+                    this.requestApproval('manager'));
+                document.getElementById('btnRequestApprovalRegionalManager')?.addEventListener('click', () =>
+                    this.requestApproval('regional_manager'));
+
+                // Utility buttons
+                this.elements.downloadBtn?.addEventListener('click', () =>
+                    console.log('Export functionality not implemented'));
+                this.elements.deleteBtn?.addEventListener('click', () =>
+                    console.log('Delete functionality not implemented'));
+            }
+
+            bindModalEvents() {
+                const modalEl = this.elements.dealModal;
+                if (!modalEl) return;
+
+                modalEl.addEventListener('hidden.bs.modal', () => {
+                    if (this.state.mode === 'update' && this.state.pendingUpdate && !this.state.hasSubmitted) {
+                        this.revertPendingUpdate();
+                    }
+                    this.resetModalState();
+                });
+            }
+
+            handleGlobalClick(e) {
+                // Deal content click
+                if (e.target.closest('.deal-content')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const url = e.target.closest('.deal-content').dataset.url;
+                    if (url) window.location.href = url;
+                }
+
+                // Edit button
+                if (e.target.closest('.edit-deal-btn')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const dealId = e.target.closest('.edit-deal-btn').dataset.id;
+                    if (dealId) this.editDeal(dealId);
+                }
+
+                // Duplicate button
+                if (e.target.closest('.duplicate-deal-btn')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const dealId = e.target.closest('.duplicate-deal-btn').dataset.id;
+                    if (dealId) this.duplicateDeal(dealId);
                 }
             }
 
-            // ===== KANBAN DRAG & DROP =====
-            initializeSortable() {
+            // ==================== DRAG & DROP ====================
+            initializeDragDrop() {
                 if (typeof Sortable === 'undefined') {
-                    console.warn('SortableJS not found. Drag & drop disabled.');
+                    console.warn('SortableJS not found');
                     return;
                 }
 
-                const kanbanBodies = document.querySelectorAll('.kanban-body');
-                kanbanBodies.forEach(body => {
+                document.querySelectorAll('.kanban-body').forEach(body => {
                     new Sortable(body, {
                         group: {
                             name: 'kanban',
-                            pull: (to, from, dragEl) => {
-                                const stage = dragEl.dataset.stage;
-
-                                // Check if expired
-                                const expiredBadge = dragEl.querySelector('.badge.bg-danger');
-                                const isExpired = expiredBadge && expiredBadge.textContent.includes(
-                                    'Expired');
-
-                                // Prevent dragging from Won, Lost, or Expired
-                                if (stage === 'won' || stage === 'lost' || isExpired) {
-                                    return false;
-                                }
-                                return true;
-                            },
+                            pull: (to, from, dragEl) => this.canDrag(dragEl),
                             put: true
                         },
                         animation: 150,
@@ -1333,128 +1279,74 @@
                         chosenClass: 'sortable-chosen',
                         dragClass: 'sortable-drag',
                         filter: '.no-drag',
-                        onStart: (evt) => {
-                            const stage = evt.item.dataset.stage;
-                            const expiredBadge = evt.item.querySelector('.badge.bg-danger');
-                            const isExpired = expiredBadge && expiredBadge.textContent.includes(
-                                'Expired');
-
-                            if (stage === 'won' || stage === 'lost' || isExpired) {
-                                evt.preventDefault();
-                                return false;
-                            }
-                            this.handleDragStart();
-                        },
+                        onStart: evt => this.handleDragStart(evt),
                         onEnd: () => this.handleDragEnd(),
-                        onAdd: (evt) => this.handleCardMove(evt),
+                        onAdd: evt => this.handleCardMove(evt)
                     });
                 });
             }
 
-            handleDragStart() {
+            canDrag(element) {
+                const stage = element.dataset.stage;
+                const isExpired = element.querySelector('.badge.bg-danger')?.textContent.includes('Expired');
+                return !(stage === 'won' || stage === 'lost' || isExpired);
+            }
+
+            handleDragStart(evt) {
+                if (!this.canDrag(evt.item)) {
+                    evt.preventDefault();
+                    return false;
+                }
                 document.querySelectorAll('.kanban-col').forEach(col => col.classList.add('drag-active'));
             }
+
             handleDragEnd() {
-                document.querySelectorAll('.kanban-col').forEach(col => col.classList.remove('drag-active',
-                    'drag-over'));
+                document.querySelectorAll('.kanban-col').forEach(col =>
+                    col.classList.remove('drag-active', 'drag-over'));
             }
+
             async handleCardMove(evt) {
                 const card = evt.item;
                 const fromBody = evt.from;
                 const toBody = evt.to;
-
-                const fromColumn = fromBody.closest('.kanban-col');
                 const toColumn = toBody.closest('.kanban-col');
-
-                const fromStage = card.dataset.stage || (fromColumn ? fromColumn.dataset.stage : null);
-                const toStage = toColumn ? toColumn.dataset.stage : null;
+                const fromStage = card.dataset.stage;
+                const toStage = toColumn?.dataset.stage;
 
                 if (!this.isValidStageTransition(fromStage, toStage, card)) {
                     this.revertCardMove(card, fromBody, evt.oldIndex);
                     return;
                 }
 
-                if (!this.isValidStageTransition(fromStage, toStage)) {
-                    this.revertCardMove(card, fromBody, evt.oldIndex);
-                    this.showError('Perpindahan stage tidak valid. Deal hanya bisa maju ke stage berikutnya.');
-                    return;
-                }
-
-                this.showLoading(true);
-                try {
-                    const response = await fetch(`/deals/${encodeURIComponent(card.dataset.id)}`, {
-                        method: 'GET',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': this.csrfToken
-                        },
-                        credentials: 'same-origin'
-                    });
-
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const result = await response.json();
-                    if (!result.ok) throw new Error(result.message || 'Failed to fetch deal data');
-
-                    this.openAddModalUpdate({
-                        card,
-                        fromBody,
-                        toBody,
-                        fromColumn,
-                        toColumn,
-                        fromStage,
-                        toStage,
-                        oldIndex: evt.oldIndex,
-                        dealData: result.deal
-                    });
-
-                } catch (error) {
-                    console.error('Error fetching deal data:', error);
-                    this.revertCardMove(card, fromBody, evt.oldIndex);
-                    this.showError('Gagal mengambil data deal dari database');
-                } finally {
-                    this.showLoading(false);
-                }
+                await this.loadAndUpdateDeal(card, fromBody, toBody, toColumn, fromStage, toStage, evt.oldIndex);
             }
 
             isValidStageTransition(fromStage, toStage, card) {
-                // Normalize stages to lowercase
                 fromStage = (fromStage || '').toLowerCase();
                 toStage = (toStage || '').toLowerCase();
 
-                // Check if card is expired
-                const expiredBadge = card ? card.querySelector('.badge.bg-danger') : null;
-                const isExpired = expiredBadge && expiredBadge.textContent.includes('Expired');
-
+                // Check expired
+                const isExpired = card?.querySelector('.badge.bg-danger')?.textContent.includes('Expired');
                 if (isExpired) {
-                    this.showError(
-                        'Deal yang sudah expired tidak dapat dipindahkan ke stage lain. Silakan perpanjang masa berlaku terlebih dahulu.'
-                    );
+                    this.showError('Deal yang sudah expired tidak dapat dipindahkan');
                     return false;
                 }
 
-                // Won and Lost cannot move to any stage
-                if (fromStage === 'won') {
-                    this.showError('Deal yang sudah WON tidak dapat dipindahkan ke stage lain.');
+                // Check locked stages
+                if (fromStage === 'won' || fromStage === 'lost') {
+                    this.showError(`Deal yang sudah ${fromStage.toUpperCase()} tidak dapat dipindahkan`);
                     return false;
                 }
 
-                if (fromStage === 'lost') {
-                    this.showError('Deal yang sudah LOST tidak dapat dipindahkan ke stage lain.');
-                    return false;
-                }
+                // Allow moving to lost from any stage
+                if (toStage === 'lost') return true;
 
-                // Allow moving to lost from any stage (except won/lost)
-                if (toStage === 'lost') {
-                    return true;
-                }
+                // Check progression
+                const fromIndex = this.config.stages.indexOf(fromStage);
+                const toIndex = this.config.stages.indexOf(toStage);
 
-                // Normal progression: only allow moving to next stage
-                const fromIndex = this.STAGES.indexOf(fromStage);
-                const toIndex = this.STAGES.indexOf(toStage);
-
-                // Must move exactly one stage forward (or to lost)
                 if (toIndex !== fromIndex + 1) {
-                    this.showError('Deal hanya bisa maju ke stage berikutnya atau langsung ke LOST.');
+                    this.showError('Deal hanya bisa maju ke stage berikutnya atau langsung ke LOST');
                     return false;
                 }
 
@@ -1466,311 +1358,534 @@
                 originalBody.insertBefore(card, referenceNode);
             }
 
-            // ===== UPDATE VIA ADD MODAL =====
-            openAddModalUpdate(ctx) {
-                this.mode = 'update';
-                this.pendingUpdate = ctx;
-                this.hasSubmitted = false;
+            // ==================== FORM MANAGEMENT ====================
+            initializeForm() {
+                this.elements.dealForm?.classList.add('needs-validation');
+            }
 
-                const dealData = ctx.dealData;
-                dealData.stage = ctx.toStage;
+            resetForm() {
+                const form = this.elements.dealForm;
+                if (!form) return;
+
+                form.reset();
+                form.classList.remove('was-validated');
+
+                this.resetItemRows();
+                this.resetSelect2Fields();
+                this.state.itemIndex = 1;
+            }
+
+            resetItemRows() {
+                const container = this.elements.itemsContainer;
+                if (!container) return;
+
+                // Remove all rows except first
+                container.querySelectorAll('.item-row').forEach((item, index) => {
+                    if (index > 0) item.remove();
+                });
+
+                // Clear first row
+                const firstRow = container.querySelector('.item-row[data-item="0"]');
+                if (firstRow && window.jQuery) {
+                    jQuery(firstRow).find('select.item-select').val(null).trigger('change');
+                    firstRow.querySelectorAll('input').forEach(inp => inp.value = '');
+                }
+            }
+
+            resetSelect2Fields() {
+                if (!window.jQuery) return;
+                const $ = window.jQuery;
+
+                $('#storeSelect').val(null).trigger('change');
+                $('#customerSelect').val(null).trigger('change');
+                $('#salesSelect').val(null).trigger('change');
+
+                document.getElementById('store_id').value = '';
+                document.getElementById('store_name').value = '';
+                document.getElementById('id_cust').value = '';
+                document.getElementById('cust_name').value = '';
+            }
+
+            fillFormFromDealData(dealData) {
+                // Basic fields
+                this.fillBasicFields(dealData);
+                this.fillStoreData(dealData);
+                this.fillCustomerData(dealData);
+                this.fillAdditionalFields(dealData);
+
+                // Sales data
+                if (Array.isArray(dealData.salper_ids)) {
+                    this.fillSalesData(dealData.salper_ids);
+                }
+
+                // Items
+                if (dealData.items?.length > 0) {
+                    this.populateItems(dealData.items);
+                }
+            }
+
+            fillBasicFields(dealData) {
+                const fields = {
+                    deals_id: dealData.deals_id,
+                    stage_hidden: (dealData.stage || 'mapping').toLowerCase(),
+                    dealId: dealData.deals_id,
+                    dealName: dealData.deal_name,
+                    dealSize: dealData.deal_size,
+                    createdDate: dealData.created_date,
+                    endDate: dealData.closed_date,
+                    email: dealData.email,
+                    notes: dealData.notes,
+                    paymentTerms: dealData.payment_term,
+                    quotationExpiredDate: dealData.quotation_exp_date,
+                    receiptNumber: dealData.receipt_number,
+                    failureReason: dealData.lost_reason,
+                    status_approval_harga: dealData.status_approval_harga
+                };
+
+                Object.entries(fields).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) element.value = value || '';
+                });
+
+                this.updateApprovalStatus(dealData.status_approval_harga);
+            }
+
+            fillStoreData(dealData) {
+                if (!dealData.store_id) return;
+
+                document.getElementById('store_id').value = dealData.store_id;
+                document.getElementById('store_name').value = dealData.store_name || '';
+
+                if (window.jQuery && dealData.store_name) {
+                    const $select = jQuery('#storeSelect');
+                    const option = new Option(dealData.store_name, dealData.store_id, true, true);
+                    $select.append(option).trigger('change');
+                }
+            }
+
+            fillCustomerData(dealData) {
+                const customer = dealData.customer || {};
+                const data = {
+                    id: dealData.id_cust || customer.id || customer.id_cust || '',
+                    name: dealData.cust_name || customer.name || customer.cust_name || '',
+                    phone: dealData.no_telp_cust || customer.phone || customer.no_telp || '',
+                    address: dealData.alamat_lengkap || customer.address || customer.alamat || ''
+                };
+
+                document.getElementById('id_cust').value = data.id;
+                document.getElementById('cust_name').value = data.name;
+                document.getElementById('customerPhone').value = data.phone;
+                document.getElementById('customerAddress').value = data.address;
+
+                if (window.jQuery && data.id && data.name) {
+                    const $select = jQuery('#customerSelect');
+                    const option = new Option(data.name, data.id, true, true);
+                    $select.append(option).trigger('change');
+                }
+            }
+
+            fillAdditionalFields(dealData) {
+                const additionalFields = {
+                    customerAddress: dealData.alamat_lengkap,
+                    paymentTerms: dealData.payment_term,
+                    quotationExpiredDate: dealData.quotation_exp_date,
+                    receiptNumber: dealData.receipt_number,
+                    failureReason: dealData.lost_reason
+                };
+
+                Object.entries(additionalFields).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) element.value = value || '';
+                });
+            }
+
+            fillSalesData(salperIds) {
+                if (!window.jQuery) return;
+                const $select = jQuery('#salesSelect');
+
+                salperIds.forEach(sid => {
+                    const option = new Option(String(sid), String(sid), true, true);
+                    $select.append(option);
+                });
+                $select.trigger('change');
+            }
+
+            async handleFormSubmit(e) {
+                e.preventDefault();
+                const form = e.target;
+
+                if (!this.validateForm(form)) return;
+
+                this.showLoading(true);
+
+                try {
+                    const formData = new FormData(form);
+                    this.mapFirstItemToLegacyFields(formData);
+
+                    const response = await this.submitForm(form.action, formData);
+                    const result = await response.json();
+
+                    if (!result.ok) throw new Error(result.message || 'Gagal menyimpan');
+
+                    this.state.hasSubmitted = true;
+                    this.handleSuccessfulSubmission(result);
+                } catch (error) {
+                    this.handleSubmissionError(error);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            validateForm(form) {
+                if (!form.checkValidity()) {
+                    form.classList.add('was-validated');
+                    return false;
+                }
+
+                const storeId = document.getElementById('store_id')?.value;
+                if (!storeId) {
+                    alert('Silakan pilih Store terlebih dahulu');
+                    return false;
+                }
+
+                const stage = document.getElementById('stage_hidden')?.value;
+                const statusApproval = document.getElementById('status_approval_harga')?.value;
+
+                if (stage === 'quotation' && statusApproval === 'REQUEST_HARGA_KHUSUS') {
+                    alert('Request harga khusus belum diapprove');
+                    return false;
+                }
+
+                return true;
+            }
+
+            async submitForm(url, formData) {
+                return fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': this.state.csrfToken
+                    },
+                    credentials: 'same-origin',
+                    body: formData
+                });
+            }
+
+            mapFirstItemToLegacyFields(formData) {
+                const container = this.elements.itemsContainer;
+                const firstRow = container?.querySelector('.item-row');
+                if (!firstRow) return;
+
+                const mappings = [{
+                        from: '[itemCode]',
+                        to: 'item_no'
+                    },
+                    {
+                        from: '[itemName]',
+                        to: 'item_name'
+                    },
+                    {
+                        from: '[qty]',
+                        to: 'item_qty'
+                    },
+                    {
+                        from: '[discountedPrice]',
+                        to: 'fix_price'
+                    },
+                    {
+                        from: '[totalPrice]',
+                        to: 'total_price'
+                    }
+                ];
+
+                mappings.forEach(({
+                    from,
+                    to
+                }) => {
+                    const input = firstRow.querySelector(`input[name*="${from}"]`);
+                    if (input?.value) formData.set(to, input.value);
+                });
+            }
+
+            handleSuccessfulSubmission(result) {
+                const modal = bootstrap.Modal.getInstance(this.elements.dealModal);
+                modal?.hide();
+
+                if (this.state.mode === 'create') {
+                    this.addNewDeal(result.deal, result.redirect);
+                    this.showSuccess('Deal berhasil disimpan');
+                } else {
+                    this.updateExistingDeal();
+                    this.showSuccess('Deal berhasil diupdate');
+                }
+            }
+
+            handleSubmissionError(error) {
+                console.error('Form submission error:', error);
+                this.showError('Terjadi kesalahan saat menyimpan deal');
+
+                if (this.state.mode === 'update') {
+                    this.revertPendingUpdate();
+                }
+            }
+
+            // ==================== MODAL MANAGEMENT ====================
+            openCreateModal() {
+                this.state.mode = 'create';
+                this.state.pendingUpdate = null;
+
+                this.resetForm();
+                this.generateDealId();
+                this.setTodayDate();
+                this.setDefaultEmail();
+                this.handleStageChange('MAPPING');
+
+                this.elements.dealForm.action = "{{ route('deals.store') }}";
+
+                new bootstrap.Modal(this.elements.dealModal).show();
+                setTimeout(() => this.elements.dealName?.focus(), 200);
+            }
+
+            async openUpdateModal(context) {
+                this.state.mode = 'update';
+                this.state.pendingUpdate = context;
+                this.state.hasSubmitted = false;
+
+                const dealData = {
+                    ...context.dealData,
+                    stage: context.toStage
+                };
 
                 this.resetForm();
                 this.fillFormFromDealData(dealData);
                 this.handleStageChange(dealData.stage.toUpperCase());
 
-                const form = document.getElementById('dealForm');
-                if (form) {
-                    form.action = `/deals/${encodeURIComponent(dealData.deals_id)}`;
-                    let methodInput = form.querySelector('input[name="_method"]');
-                    if (!methodInput) {
-                        methodInput = document.createElement('input');
-                        methodInput.type = 'hidden';
-                        methodInput.name = '_method';
-                        methodInput.value = 'PATCH';
-                        form.appendChild(methodInput);
-                    } else {
-                        methodInput.value = 'PATCH';
-                    }
-                }
+                this.setupUpdateForm(dealData.deals_id);
 
-                new bootstrap.Modal(document.getElementById('dealModal')).show();
+                new bootstrap.Modal(this.elements.dealModal).show();
                 setTimeout(() => document.getElementById('notes')?.focus(), 200);
             }
 
-            openModalForDuplicate(dealData) {
-                this.mode = 'create';
-                this.pendingUpdate = null;
+            setupUpdateForm(dealId) {
+                const form = this.elements.dealForm;
+                if (!form) return;
 
-                // Reset form first
-                this.resetForm();
+                form.action = `/deals/${encodeURIComponent(dealId)}`;
 
-                // Set mode to create and update form action
-                const form = document.getElementById('dealForm');
+                let methodInput = form.querySelector('input[name="_method"]');
+                if (!methodInput) {
+                    methodInput = document.createElement('input');
+                    methodInput.type = 'hidden';
+                    methodInput.name = '_method';
+                    form.appendChild(methodInput);
+                }
+                methodInput.value = 'PATCH';
+            }
+
+            resetModalState() {
+                this.state.hasSubmitted = false;
+                this.state.mode = 'create';
+
+                const form = this.elements.dealForm;
                 if (form) {
                     form.action = "{{ route('deals.store') }}";
                     const methodInput = form.querySelector('input[name="_method"]');
-                    if (methodInput) methodInput.remove();
+                    methodInput?.remove();
                 }
 
-                // Fill form with duplicated data
-                this.fillFormFromDealData(dealData);
-
-                // Ensure stage is set to MAPPING
-                const stageSelect = document.getElementById('stageSelect');
-                if (stageSelect) {
-                    stageSelect.value = 'MAPPING';
-                    stageSelect.disabled = false;
-                }
-                const stageHidden = document.getElementById('stage_hidden');
-                if (stageHidden) stageHidden.value = 'mapping';
-
-                // Update modal title
                 const modalTitle = document.getElementById('dealModalLabel');
                 if (modalTitle) {
-                    modalTitle.innerHTML = '<i class="fas fa-copy me-2" aria-hidden="true"></i>Duplikasi Deal';
-                }
-
-                // Handle stage visibility
-                this.handleStageChange('MAPPING');
-
-                // Show the modal
-                new bootstrap.Modal(document.getElementById('dealModal')).show();
-
-                // Focus on deal name for editing
-                setTimeout(() => {
-                    const dealNameInput = document.getElementById('dealName');
-                    if (dealNameInput) {
-                        dealNameInput.select();
-                        dealNameInput.focus();
-                    }
-                }, 200);
-            }
-
-            openModalForEdit(dealData) {
-                this.mode = 'update';
-                this.pendingUpdate = null;
-                this.hasSubmitted = false;
-
-                // Reset form first
-                this.resetForm();
-
-                // Fill form with deal data
-                this.fillFormFromDealData(dealData);
-
-                // Setup form for update
-                const form = document.getElementById('dealForm');
-                if (form) {
-                    form.action = `/deals/${encodeURIComponent(dealData.deals_id)}`;
-                    let methodInput = form.querySelector('input[name="_method"]');
-                    if (!methodInput) {
-                        methodInput = document.createElement('input');
-                        methodInput.type = 'hidden';
-                        methodInput.name = '_method';
-                        methodInput.value = 'PATCH';
-                        form.appendChild(methodInput);
-                    } else {
-                        methodInput.value = 'PATCH';
-                    }
-                }
-
-                // Lock stage to current stage (no stage change in edit)
-                const currentStage = (dealData.stage || 'mapping').toLowerCase();
-                const stageSelect = document.getElementById('stageSelect');
-                if (stageSelect) {
-                    while (stageSelect.options.length) stageSelect.remove(0);
-                    stageSelect.add(new Option(currentStage.toUpperCase(), currentStage.toUpperCase(), true, true));
-                    stageSelect.disabled = true;
-                }
-
-                const stageHidden = document.getElementById('stage_hidden');
-                if (stageHidden) stageHidden.value = currentStage;
-
-                // Update modal title
-                const modalTitle = document.getElementById('dealModalLabel');
-                if (modalTitle) {
-                    modalTitle.innerHTML = '<i class="fas fa-edit me-2" aria-hidden="true"></i>Edit Deal';
-                }
-
-                // Handle stage visibility
-                this.handleStageChange(currentStage.toUpperCase());
-
-                // Show the modal
-                new bootstrap.Modal(document.getElementById('dealModal')).show();
-
-                // Focus on deal name
-                setTimeout(() => {
-                    const dealNameInput = document.getElementById('dealName');
-                    if (dealNameInput) dealNameInput.focus();
-                }, 200);
-            }
-
-            fillFormFromDealData(dealData) {
-                // Basic fields
-                const hiddenId = document.getElementById('deals_id');
-                if (hiddenId) hiddenId.value = dealData.deals_id || '';
-
-                const stageHidden = document.getElementById('stage_hidden');
-                if (stageHidden) stageHidden.value = (dealData.stage || 'mapping').toLowerCase();
-
-                const stageSelect = document.getElementById('stageSelect');
-                if (stageSelect) {
-                    const currentStage = (dealData.stage || 'mapping').toLowerCase();
-
-                    // Keep hidden value synced if user changes the select (only when enabled)
-                    stageSelect.onchange = () => {
-                        if (stageHidden) stageHidden.value = (stageSelect.value || 'MAPPING').toLowerCase();
-                    };
-
-                    if (currentStage === 'visit' || currentStage === 'quotation' || currentStage === 'won') {
-                        // LOCK the select to one option = the current stage
-                        while (stageSelect.options.length) stageSelect.remove(0);
-                        stageSelect.add(new Option(currentStage.toUpperCase(), currentStage.toUpperCase(), true, true));
-                        stageSelect.disabled = true;
-                        if (stageHidden) stageHidden.value = currentStage; // ensure backend receives it
-                    } else {
-                        // CREATE / MAPPING mode: only show MAPPING and VISIT, enabled
-                        while (stageSelect.options.length) stageSelect.remove(0);
-                        stageSelect.add(new Option('MAPPING', 'MAPPING'));
-                        stageSelect.add(new Option('VISIT', 'VISIT'));
-
-                        // preselect based on current data
-                        stageSelect.value = currentStage === 'visit' ? 'VISIT' : 'MAPPING';
-                        stageSelect.disabled = false;
-
-                        // sync hidden now
-                        if (stageHidden) stageHidden.value = (stageSelect.value || 'MAPPING').toLowerCase();
-                    }
-                }
-
-                // (keep the rest of your code)
-
-
-                const idInput = document.getElementById('dealId');
-                if (idInput) idInput.value = dealData.deals_id || '';
-
-                const dealName = document.getElementById('dealName');
-                if (dealName) dealName.value = dealData.deal_name || '';
-
-                const dealSize = document.getElementById('dealSize');
-                if (dealSize) dealSize.value = dealData.deal_size || '';
-
-                const createdDate = document.getElementById('createdDate');
-                if (createdDate) createdDate.value = dealData.created_date || '';
-
-                const endDate = document.getElementById('endDate');
-                if (endDate) endDate.value = dealData.closed_date || '';
-
-                // Store information
-                const storeId = document.getElementById('store_id');
-                const storeName = document.getElementById('store_name');
-                if (storeId) storeId.value = dealData.store_id || '';
-                if (storeName) storeName.value = dealData.store_name || '';
-
-                const $select = window.jQuery ? jQuery('#storeSelect') : null;
-                if ($select && $select.length && dealData.store_name) {
-                    const opt = new Option(dealData.store_name, dealData.store_id, true, true);
-                    $select.append(opt).trigger('change');
-                }
-
-                // Additional fields
-                const email = document.getElementById('email');
-                if (email) email.value = dealData.email || '';
-
-                const alamat = document.getElementById('customerAddress');
-                if (alamat) alamat.value = dealData.alamat_lengkap || '';
-
-                const notes = document.getElementById('notes');
-                if (notes) notes.value = dealData.notes || '';
-
-                // ---- Customer info (Select2 + hidden + inputs)
-                (() => {
-                    const id = dealData.id_cust ??
-                        (dealData.customer && (dealData.customer.id ?? dealData.customer.id_cust)) ??
-                        '';
-                    const name = dealData.cust_name ??
-                        (dealData.customer && (dealData.customer.name ?? dealData.customer.cust_name)) ??
-                        '';
-                    const phone = dealData.no_telp_cust ??
-                        (dealData.customer && (dealData.customer.phone ?? dealData.customer.no_telp)) ??
-                        '';
-                    const address = dealData.alamat_lengkap ??
-                        (dealData.customer && (dealData.customer.address ?? dealData.customer.alamat)) ??
-                        '';
-
-                    // Hidden & text fields
-                    const idCustEl = document.getElementById('id_cust');
-                    if (idCustEl) idCustEl.value = id || '';
-                    const nameCustEl = document.getElementById('cust_name');
-                    if (nameCustEl) nameCustEl.value = name || '';
-                    const custPhoneEl = document.getElementById('customerPhone');
-                    if (custPhoneEl) custPhoneEl.value = phone || '';
-                    const custAddrEl = document.getElementById('customerAddress');
-                    if (custAddrEl) custAddrEl.value = address || '';
-
-                    // Select2 (#customerSelect)
-                    if (window.jQuery) {
-                        const $ = window.jQuery;
-                        const $cust = $('#customerSelect');
-                        if ($cust.length) {
-                            $cust.val(null).trigger('change');
-
-                            if (id && name) {
-                                const opt = new Option(String(name), String(id), true, true);
-                                $cust.append(opt).trigger('change');
-                            }
-                        }
-                    }
-                })();
-
-                // Payment info
-                const paymentTerms = document.getElementById('paymentTerms');
-                if (paymentTerms) paymentTerms.value = dealData.payment_term || '';
-
-                const quotationExp = document.getElementById('quotationExpiredDate');
-                if (quotationExp) quotationExp.value = dealData.quotation_exp_date || '';
-
-                const statusApprovalHarga = document.getElementById('status_approval_harga');
-                if (statusApprovalHarga) statusApprovalHarga.value = dealData.status_approval_harga || '';
-
-                this.setHargaApprovalLocal(dealData.status_approval_harga, dealData.status_approval_harga, 'bg-primary')
-
-                // Receipt info
-                const receiptNumber = document.getElementById('receiptNumber');
-                if (receiptNumber) receiptNumber.value = dealData.receipt_number || '';
-
-                // Lost reason
-                const lostReason = document.getElementById('failureReason');
-                if (lostReason) lostReason.value = dealData.lost_reason || '';
-
-                // Sales info
-                if (Array.isArray(dealData.salper_ids) && window.jQuery) {
-                    const $ = window.jQuery;
-                    const $select = $('#salesSelect');
-                    dealData.salper_ids.forEach(sid => {
-                        const opt = new Option(String(sid), String(sid), true, true);
-                        $select.append(opt);
-                    });
-                    $select.trigger('change');
-                }
-
-                // Populate items
-                if (dealData.items && dealData.items.length > 0) {
-                    this.populateItemsFromDealData(dealData.items);
+                    modalTitle.innerHTML = '<i class="fas fa-plus me-2"></i>Tambah Deal Baru';
                 }
             }
 
-            populateItemsFromDealData(items) {
-                const container = document.getElementById('itemsContainer');
+            // ==================== STAGE MANAGEMENT ====================
+            handleStageChange(stageUpper) {
+                const stageLower = (stageUpper || '').toLowerCase();
+
+                if (this.elements.stageHidden) {
+                    this.elements.stageHidden.value = stageLower;
+                }
+
+                this.toggleStageSections(stageLower);
+
+                const quotationBtn = this.elements.generateQuotationBtn;
+                quotationBtn?.classList.toggle('d-none', stageLower !== 'quotation');
+            }
+
+            toggleStageSections(currentStage) {
+                document.querySelectorAll('.stage-conditional').forEach(section => {
+                    const stages = section.dataset.stages?.split(',') || [];
+                    section.style.display = stages.includes(currentStage) ? 'block' : 'none';
+                });
+            }
+
+            // ==================== ITEM MANAGEMENT ====================
+            setupItemCalculations() {
+                const container = this.elements.itemsContainer;
                 if (!container) return;
 
-                // Clear existing items except first row
-                const allRows = container.querySelectorAll('.item-row');
-                allRows.forEach((row, index) => {
+                container.addEventListener('input', e => {
+                    const target = e.target;
+                    const row = target.closest('.item-row');
+                    if (!row) return;
+
+                    if (target.classList.contains('item-qty') ||
+                        target.classList.contains('item-disc') ||
+                        target.classList.contains('item-discounted-price')) {
+
+                        if (target.classList.contains('item-disc')) {
+                            this.updateDiscountedPrice(row);
+                        } else if (target.classList.contains('item-discounted-price')) {
+                            this.updateDiscountPercentage(row);
+                        }
+
+                        this.calculateItemTotal(row);
+                        this.updateDealSizeFromItems();
+                    }
+                });
+
+                this.updateDealSizeFromItems();
+            }
+
+            addItemRow() {
+                const container = this.elements.itemsContainer;
+                if (!container) return;
+
+                const index = this.state.itemIndex++;
+                const itemRow = this.createItemRowHTML(index);
+
+                container.insertAdjacentHTML('beforeend', itemRow);
+                this.initItemSelect(container.querySelector(`.item-row[data-item="${index}"]`));
+                this.updateDealSizeFromItems();
+            }
+
+            removeItemRow(button) {
+                const itemIndex = button.dataset.remove;
+                const itemRow = document.querySelector(`.item-row[data-item="${itemIndex}"]`);
+                itemRow?.remove();
+                this.updateDealSizeFromItems();
+            }
+
+            createItemRowHTML(index) {
+                const fields = [{
+                        col: 4,
+                        label: 'Pilih Item',
+                        html: `<select class="form-select item-select" name="items[${index}][itemSelect]" data-index="${index}"></select>
+                <input type="hidden" name="items[${index}][itemCode]" class="legacy-item-code">
+                <input type="hidden" name="items[${index}][itemName]" class="legacy-item-name">`
+                    },
+                    {
+                        col: 1,
+                        label: 'UoM',
+                        html: `<input type="text" class="form-control item-uom" name="items[${index}][uom]" readonly>`
+                    },
+                    {
+                        col: 2,
+                        label: 'Harga',
+                        html: `<input type="number" class="form-control item-price bg-light" name="items[${index}][price]" readonly>`
+                    },
+                    {
+                        col: 1,
+                        label: 'Qty',
+                        html: `<input type="number" class="form-control item-qty" name="items[${index}][qty]" min="1">`
+                    },
+                    {
+                        col: 1,
+                        label: 'Disc %',
+                        html: `<input type="number" class="form-control item-disc" name="items[${index}][disc]" min="0" max="100" step="0.01">`
+                    },
+                    {
+                        col: 2,
+                        label: 'Harga (after disc)',
+                        html: `<input type="number" class="form-control item-discounted-price" name="items[${index}][discountedPrice]" min="0" step="0.01">`
+                    },
+                    {
+                        col: 2,
+                        label: 'Total',
+                        html: `<input type="text" class="form-control item-total bg-light" name="items[${index}][totalPrice]" readonly>`
+                    }
+                ];
+
+                const fieldsHtml = fields.map(f => `
+            <div class="col-md-${f.col}">
+                <label class="form-label">${f.label}</label>
+                ${f.html}
+            </div>
+        `).join('');
+
+                return `
+            <div class="item-row card mb-3" data-item="${index}">
+                <div class="card-body">
+                    <div class="row g-3">${fieldsHtml}</div>
+                    <button type="button" class="btn btn-outline-danger btn-sm mt-2 remove-item-btn" data-remove="${index}">
+                        <i class="fas fa-trash me-1"></i> Hapus Item
+                    </button>
+                </div>
+            </div>
+        `;
+            }
+
+            updateDiscountedPrice(row) {
+                const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+                const disc = parseFloat(row.querySelector('.item-disc')?.value) || 0;
+                const discountedPrice = price * (1 - disc / 100);
+
+                const discountedInput = row.querySelector('.item-discounted-price');
+                if (discountedInput) {
+                    discountedInput.value = discountedPrice.toFixed(2);
+                }
+            }
+
+            updateDiscountPercentage(row) {
+                const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+                const discountedPrice = parseFloat(row.querySelector('.item-discounted-price')?.value) || 0;
+
+                if (price > 0) {
+                    const discountPercent = ((price - discountedPrice) / price) * 100;
+                    const discInput = row.querySelector('.item-disc');
+                    if (discInput) {
+                        discInput.value = Math.max(0, Math.min(100, discountPercent)).toFixed(2);
+                    }
+                }
+            }
+
+            calculateItemTotal(row) {
+                const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+                const discountedPrice = parseFloat(row.querySelector('.item-discounted-price')?.value) || 0;
+                const total = qty * discountedPrice;
+
+                const totalInput = row.querySelector('.item-total');
+                if (totalInput) {
+                    totalInput.value = total > 0 ? this.formatCurrency(total) : '';
+                }
+            }
+
+            updateDealSizeFromItems() {
+                const container = this.elements.itemsContainer;
+                if (!container) return;
+
+                let sum = 0;
+                container.querySelectorAll('.item-row').forEach(row => {
+                    const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+                    const discountedPrice = parseFloat(row.querySelector('.item-discounted-price')?.value) || 0;
+                    sum += qty * discountedPrice;
+                });
+
+                if (this.elements.dealSize) {
+                    this.elements.dealSize.value = sum;
+                }
+            }
+
+            populateItems(items) {
+                const container = this.elements.itemsContainer;
+                if (!container) return;
+
+                // Clear existing items except first
+                container.querySelectorAll('.item-row').forEach((row, index) => {
                     if (index > 0) row.remove();
                 });
 
-                // Populate items
                 items.forEach((item, index) => {
                     let targetRow;
                     if (index === 0) {
@@ -1781,199 +1896,271 @@
                     }
 
                     if (targetRow && window.jQuery) {
-                        const $ = window.jQuery;
-
-                        const $itemSelect = $(targetRow).find('select.item-select');
-                        if ($itemSelect.length) {
-                            const option = new Option(item.item_name, item.item_no, true, true);
-                            $itemSelect.append(option).trigger('change');
-                        }
-
-                        // Set qty
-                        const qtyInput = targetRow.querySelector('.item-qty');
-                        if (qtyInput) qtyInput.value = item.quantity || '';
-
-                        // Set price (readonly)
-                        const priceInput = targetRow.querySelector('.item-price');
-                        if (priceInput) priceInput.value = item.price || item.unit_price || '';
-
-                        // Set discount
-                        const discInput = targetRow.querySelector('.item-disc');
-                        if (discInput) discInput.value = item.discount_percent || '';
-
-                        // Set discounted price
-                        const discountedPriceInput = targetRow.querySelector('.item-discounted-price');
-                        if (discountedPriceInput) discountedPriceInput.value = item.unit_price || '';
-
-                        this.calculateItemTotal(targetRow);
+                        this.populateItemRow(targetRow, item);
                     }
                 });
 
                 this.updateDealSizeFromItems();
             }
-            // ===== FORM HANDLING =====
-            initializeForm() {
-                const form = document.getElementById('dealForm');
-                if (!form) return;
-                form.classList.add('needs-validation');
-            }
 
-            updateStageTotal(column) {
-                if (!column) return;
+            populateItemRow(row, item) {
+                const $ = window.jQuery;
+                const $itemSelect = $(row).find('select.item-select');
 
-                const cards = column.querySelectorAll('.kanban-card');
-                let total = 0;
+                if ($itemSelect.length) {
+                    const option = new Option(item.item_name, item.item_no, true, true);
+                    $itemSelect.append(option).trigger('change');
+                }
 
-                cards.forEach(card => {
-                    const dealSizeText = card.querySelector('.small.text-muted')?.textContent || '';
-                    const match = dealSizeText.match(/Rp\s*([\d.,]+)/);
-                    if (match) {
-                        const value = parseFloat(match[1].replace(/\./g, '').replace(',', '.')) || 0;
-                        total += value;
-                    }
+                const inputs = {
+                    '.item-qty': item.quantity || '',
+                    '.item-price': item.price || item.unit_price || '',
+                    '.item-disc': item.discount_percent || '',
+                    '.item-discounted-price': item.unit_price || ''
+                };
+
+                Object.entries(inputs).forEach(([selector, value]) => {
+                    const input = row.querySelector(selector);
+                    if (input) input.value = value;
                 });
 
-                const totalElement = column.querySelector('.kanban-sub small');
-                if (totalElement) {
-                    totalElement.textContent = `Rp ${this.formatCurrency(total)}`;
-                }
+                this.calculateItemTotal(row);
             }
 
-            async handleFormSubmit(e) {
-                e.preventDefault();
-                const form = e.target;
+            // ==================== SELECT2 INITIALIZATION ====================
+            initializeSelects() {
+                this.initStoreSelect();
+                this.initCustomerSelect();
+                this.initSalesSelect();
+                this.initAllItemSelects();
+            }
 
-                if (!form.checkValidity()) {
-                    form.classList.add('was-validated');
-                    return;
-                }
+            initStoreSelect() {
+                if (!window.jQuery) return;
 
-                const storeId = document.getElementById('store_id').value;
-                if (!storeId) {
-                    alert('Silakan pilih Store terlebih dahulu.');
-                    return;
-                }
+                const $ = window.jQuery;
+                const $select = $('#storeSelect');
+                if (!$select.length) return;
 
-                const formData = new FormData(form);
-                this.mapFirstItemToLegacyFields(formData);
+                $select.select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Cari & pilih store…',
+                    allowClear: true,
+                    dropdownParent: $('#dealModal'),
+                    ajax: {
+                        url: '{{ route('stores.search') }}',
+                        type: 'GET',
+                        dataType: 'json',
+                        delay: 250,
+                        data: params => ({
+                            q: params.term || ''
+                        }),
+                        processResults: data => data || {
+                            results: []
+                        },
+                        cache: true
+                    },
+                    minimumInputLength: 0,
+                    width: '100%'
+                });
 
-                const stage = String(formData.get('stage') || '').toLowerCase();
-                const statusApproval = String(formData.get('status_approval_harga') || '').trim();
+                $select.on('select2:select', e => {
+                    const data = e.params.data || {};
+                    document.getElementById('store_id').value = data.id || '';
+                    document.getElementById('store_name').value = data.text || '';
+                    this.reloadSalesSelect();
+                });
 
-                // if (stage === 'visit' && !statusApproval) {
-                //     alert('Silakan ajukan harga khusus terlebih dahulu.');
-                //     return;
-                // }
+                $select.on('select2:clear', () => {
+                    document.getElementById('store_id').value = '';
+                    document.getElementById('store_name').value = '';
+                    this.reloadSalesSelect();
+                });
+            }
 
-                if (stage === 'quotation' && statusApproval == "REQUEST_HARGA_KHUSUS") {
-                    alert('Request harga khusus di deals ini belum diapprove!');
-                    return;
-                }
+            initCustomerSelect() {
+                if (!window.jQuery) return;
+
+                const $ = window.jQuery;
+                const $select = $('#customerSelect');
+                if (!$select.length) return;
+
+                $select.select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Cari & pilih Customer…',
+                    allowClear: true,
+                    dropdownParent: $('#dealModal'),
+                    ajax: {
+                        url: '{{ route('customers.search') }}',
+                        type: 'GET',
+                        dataType: 'json',
+                        delay: 250,
+                        data: params => ({
+                            q: params.term || ''
+                        }),
+                        processResults: data => data,
+                        cache: true
+                    },
+                    minimumInputLength: 0,
+                    width: '100%'
+                });
+
+                $select.on('select2:select', e => {
+                    const d = e.params.data || {};
+                    $('#id_cust').val(d.id || '');
+                    $('#cust_name').val(d.name || '');
+                    $('#customerPhone').val(d.phone || '');
+                    $('#customerAddress').val(d.address || '');
+                });
+
+                $select.on('select2:clear', () => {
+                    $('#id_cust, #cust_name, #customerPhone, #customerAddress').val('');
+                });
+            }
+
+            initSalesSelect() {
+                if (!window.jQuery) return;
+
+                const $ = window.jQuery;
+                const $select = $('#salesSelect');
+                if (!$select.length) return;
+
+                $select.select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Cari & pilih Sales…',
+                    allowClear: true,
+                    dropdownParent: $('#dealModal'),
+                    ajax: {
+                        url: '{{ route('salpers.search') }}',
+                        type: 'GET',
+                        dataType: 'json',
+                        delay: 250,
+                        data: params => ({
+                            q: params.term || '',
+                            store_id: document.getElementById('store_id')?.value || ''
+                        }),
+                        processResults: data => data,
+                        cache: true
+                    },
+                    minimumInputLength: 0,
+                    width: '100%',
+                    multiple: true
+                });
+
+                $select.on('change', () => {
+                    const selected = $select.select2('data') || [];
+                    const first = selected[0] || {};
+                    $('#sales_id_visit').val(first.id || '');
+                    $('#sales_name').val(first.text || '');
+                });
+            }
+
+            reloadSalesSelect() {
+                if (!window.jQuery) return;
+
+                const $ = window.jQuery;
+                const $select = $('#salesSelect');
+                if (!$select.length) return;
+
+                $select.val(null).trigger('change');
+                $select.select2('destroy');
+                this.initSalesSelect();
+            }
+
+            initItemSelect(rowEl) {
+                if (!window.jQuery) return;
+
+                const $ = window.jQuery;
+                const $select = $(rowEl).find('select.item-select');
+                if (!$select.length) return;
+
+                $select.select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Cari & pilih item…',
+                    allowClear: true,
+                    dropdownParent: $('#dealModal'),
+                    ajax: {
+                        url: '{{ route('items.search') }}',
+                        type: 'GET',
+                        dataType: 'json',
+                        delay: 250,
+                        data: params => ({
+                            q: params.term || ''
+                        }),
+                        processResults: data => data || {
+                            results: []
+                        },
+                        cache: true
+                    },
+                    minimumInputLength: 0,
+                    width: '100%'
+                });
+
+                $select.on('select2:select', e => this.handleItemSelect(e, rowEl));
+                $select.on('select2:clear', () => this.handleItemClear(rowEl));
+            }
+
+            handleItemSelect(e, rowEl) {
+                const d = e.params.data || {};
+                const $ = window.jQuery;
+                const $row = $(rowEl);
+
+                $row.find('input.legacy-item-code').val(d.id || '');
+                $row.find('input.legacy-item-name').val(d.item_name || '');
+                $row.find('input.item-uom').val(d.uom || '');
+                $row.find('input.item-price').val(d.price || 0);
+                $row.find('input.item-disc').val(d.disc || 0);
+
+                const price = parseFloat(d.price) || 0;
+                const disc = parseFloat(d.disc) || 0;
+                const discountedPrice = price * (1 - disc / 100);
+                $row.find('input.item-discounted-price').val(discountedPrice.toFixed(2));
+
+                this.calculateItemTotal(rowEl);
+                this.updateDealSizeFromItems();
+            }
+
+            handleItemClear(rowEl) {
+                const $ = window.jQuery;
+                const $row = $(rowEl);
+
+                $row.find('input').val('');
+                this.updateDealSizeFromItems();
+            }
+
+            initAllItemSelects() {
+                document.querySelectorAll('.item-row').forEach(row => this.initItemSelect(row));
+            }
+
+            // ==================== DEAL OPERATIONS ====================
+            async editDeal(dealId) {
                 this.showLoading(true);
+
                 try {
-                    const response = await fetch(form.action, {
-                        method: 'POST',
+                    const response = await fetch(`/deals/${encodeURIComponent(dealId)}/edit-data`, {
+                        method: 'GET',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': this.csrfToken
+                            'X-CSRF-TOKEN': this.state.csrfToken,
+                            'Accept': 'application/json'
                         },
-                        credentials: 'same-origin',
-                        body: formData
+                        credentials: 'same-origin'
                     });
 
-                    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const result = await response.json();
-                    if (!result.ok) throw new Error(result.message || 'Gagal menyimpan');
 
-                    this.hasSubmitted = true;
-
-                    if (this.mode === 'create') {
-                        this.handleSuccessfulSubmission(result);
+                    if (result.ok) {
+                        this.openEditModal(result.deal);
                     } else {
-                        this.handleSuccessfulUpdate();
+                        throw new Error(result.message || 'Failed to fetch deal');
                     }
                 } catch (error) {
-                    console.error('Form submission error:', error);
-                    this.showError('Terjadi kesalahan saat menyimpan deal');
-                    if (this.mode === 'update') this.revertPendingUpdate();
+                    console.error('Edit error:', error);
+                    this.showError('Gagal membuka edit deal: ' + error.message);
                 } finally {
                     this.showLoading(false);
                 }
-            }
-
-            mapFirstItemToLegacyFields(formData) {
-                const container = document.getElementById('itemsContainer');
-                const firstRow = container ? container.querySelector('.item-row') : null;
-                if (!firstRow) return;
-
-                const mappings = [{
-                        from: 'input[name*="[itemCode]"]',
-                        to: 'item_no'
-                    },
-                    {
-                        from: 'input[name*="[itemName]"]',
-                        to: 'item_name'
-                    },
-                    {
-                        from: 'input[name*="[qty]"]',
-                        to: 'item_qty'
-                    },
-                    {
-                        from: 'input[name*="[discountedPrice]"]',
-                        to: 'fix_price'
-                    },
-                    {
-                        from: 'input[name*="[totalPrice]"]',
-                        to: 'total_price'
-                    }
-                ];
-
-                mappings.forEach(({
-                    from,
-                    to
-                }) => {
-                    const input = firstRow.querySelector(from);
-                    if (input && input.value) formData.set(to, input.value);
-                });
-            }
-
-            handleSuccessfulSubmission(result) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('dealModal'));
-                if (modal) modal.hide();
-
-                this.addCardToKanban(result.deal, result.redirect);
-                this.updateTotalCount(1);
-
-                // Update stage total
-                const column = document.querySelector(`[data-stage="${result.deal.stage}"]`);
-                this.updateStageTotal(column);
-
-                this.showSuccess('Deal berhasil disimpan');
-            }
-
-            handleSuccessfulUpdate() {
-                const {
-                    card,
-                    fromColumn,
-                    toColumn,
-                    toStage
-                } = this.pendingUpdate;
-
-                this.updateStageCount(fromColumn, -1);
-                this.updateStageCount(toColumn, 1);
-
-                // Update totals for both stages
-                this.updateStageTotal(fromColumn);
-                this.updateStageTotal(toColumn);
-
-                card.dataset.stage = toStage;
-
-                const modal = bootstrap.Modal.getInstance(document.getElementById('dealModal'));
-                if (modal) modal.hide();
-
-                this.pendingUpdate = null;
-                this.mode = 'create';
-                this.showSuccess('Stage berhasil diupdate');
             }
 
             async duplicateDeal(dealId) {
@@ -1984,20 +2171,19 @@
                         method: 'GET',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': this.csrfToken,
+                            'X-CSRF-TOKEN': this.state.csrfToken,
                             'Accept': 'application/json'
                         },
                         credentials: 'same-origin'
                     });
 
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
                     const result = await response.json();
 
                     if (result.ok) {
-                        this.openModalForDuplicate(result.deal);
+                        this.openDuplicateModal(result.deal);
                     } else {
-                        throw new Error(result.message || 'Gagal mendapatkan data deal');
+                        throw new Error(result.message || 'Failed to duplicate');
                     }
                 } catch (error) {
                     console.error('Duplication error:', error);
@@ -2007,35 +2193,139 @@
                 }
             }
 
-            async editDeal(dealId) {
+            openEditModal(dealData) {
+                this.state.mode = 'update';
+                this.state.pendingUpdate = null;
+                this.state.hasSubmitted = false;
+
+                this.resetForm();
+                this.fillFormFromDealData(dealData);
+
+                const currentStage = (dealData.stage || 'mapping').toLowerCase();
+                this.lockStageSelect(currentStage);
+                this.handleStageChange(currentStage.toUpperCase());
+
+                this.setupUpdateForm(dealData.deals_id);
+                this.updateModalTitle('edit');
+
+                new bootstrap.Modal(this.elements.dealModal).show();
+                setTimeout(() => this.elements.dealName?.focus(), 200);
+            }
+
+            openDuplicateModal(dealData) {
+                this.state.mode = 'create';
+                this.state.pendingUpdate = null;
+
+                this.resetForm();
+                this.fillFormFromDealData(dealData);
+
+                // Reset to MAPPING stage
+                if (this.elements.stageSelect) {
+                    this.elements.stageSelect.value = 'MAPPING';
+                    this.elements.stageSelect.disabled = false;
+                }
+                if (this.elements.stageHidden) {
+                    this.elements.stageHidden.value = 'mapping';
+                }
+
+                this.handleStageChange('MAPPING');
+                this.updateModalTitle('duplicate');
+
+                this.elements.dealForm.action = "{{ route('deals.store') }}";
+
+                new bootstrap.Modal(this.elements.dealModal).show();
+                setTimeout(() => {
+                    this.elements.dealName?.select();
+                    this.elements.dealName?.focus();
+                }, 200);
+            }
+
+            lockStageSelect(currentStage) {
+                const select = this.elements.stageSelect;
+                if (!select) return;
+
+                while (select.options.length) select.remove(0);
+                select.add(new Option(currentStage.toUpperCase(), currentStage.toUpperCase(), true, true));
+                select.disabled = true;
+            }
+
+            updateModalTitle(mode) {
+                const modalTitle = document.getElementById('dealModalLabel');
+                if (!modalTitle) return;
+
+                const titles = {
+                    create: '<i class="fas fa-plus me-2"></i>Tambah Deal Baru',
+                    edit: '<i class="fas fa-edit me-2"></i>Edit Deal',
+                    duplicate: '<i class="fas fa-copy me-2"></i>Duplikasi Deal'
+                };
+
+                modalTitle.innerHTML = titles[mode] || titles.create;
+            }
+
+            async loadAndUpdateDeal(card, fromBody, toBody, toColumn, fromStage, toStage, oldIndex) {
                 this.showLoading(true);
 
                 try {
-                    const response = await fetch(`/deals/${encodeURIComponent(dealId)}/edit-data`, {
+                    const response = await fetch(`/deals/${encodeURIComponent(card.dataset.id)}`, {
                         method: 'GET',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': this.csrfToken,
-                            'Accept': 'application/json'
+                            'X-CSRF-TOKEN': this.state.csrfToken
                         },
                         credentials: 'same-origin'
                     });
 
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
                     const result = await response.json();
 
-                    if (result.ok) {
-                        this.openModalForEdit(result.deal);
-                    } else {
-                        throw new Error(result.message || 'Gagal mendapatkan data deal');
-                    }
+                    if (!result.ok) throw new Error(result.message || 'Failed to fetch deal');
+
+                    await this.openUpdateModal({
+                        card,
+                        fromBody,
+                        toBody,
+                        fromColumn: fromBody.closest('.kanban-col'),
+                        toColumn,
+                        fromStage,
+                        toStage,
+                        oldIndex,
+                        dealData: result.deal
+                    });
                 } catch (error) {
-                    console.error('Edit error:', error);
-                    this.showError('Gagal membuka edit deal: ' + error.message);
+                    console.error('Error fetching deal:', error);
+                    this.revertCardMove(card, fromBody, oldIndex);
+                    this.showError('Gagal mengambil data deal');
                 } finally {
                     this.showLoading(false);
                 }
+            }
+
+            addNewDeal(deal, redirectUrl) {
+                this.addCardToKanban(deal, redirectUrl);
+                this.addCardToList(deal, redirectUrl);
+                this.updateTotalCount(1);
+
+                const column = document.querySelector(`[data-stage="${deal.stage}"]`);
+                this.updateStageTotal(column);
+            }
+
+            updateExistingDeal() {
+                const {
+                    card,
+                    fromColumn,
+                    toColumn,
+                    toStage
+                } = this.state.pendingUpdate;
+
+                this.updateStageCount(fromColumn, -1);
+                this.updateStageCount(toColumn, 1);
+                this.updateStageTotal(fromColumn);
+                this.updateStageTotal(toColumn);
+
+                card.dataset.stage = toStage;
+
+                this.state.pendingUpdate = null;
+                this.state.mode = 'create';
             }
 
             revertPendingUpdate() {
@@ -2043,546 +2333,25 @@
                     card,
                     fromBody,
                     oldIndex
-                } = this.pendingUpdate || {};
-                if (card && fromBody) this.revertCardMove(card, fromBody, oldIndex);
-                this.pendingUpdate = null;
-                this.mode = 'create';
-            }
-
-            async requestHargaKhusus() {
-                const VALUE = 'REQUEST_HARGA_KHUSUS';
-                const LABEL = 'Menunggu Approval (Harga Khusus)';
-                const BADGE = 'bg-info';
-
-                const hidden = document.getElementById('status_approval_harga');
-
-                if (hidden.value == 'REQUEST_HARGA_KHUSUS') {
-                    alert("Anda sudah mengajukan request harga khusus.");
-                    return;
+                } = this.state.pendingUpdate || {};
+                if (card && fromBody) {
+                    this.revertCardMove(card, fromBody, oldIndex);
                 }
-
-                this.setHargaApprovalLocal(VALUE, LABEL, BADGE);
-
+                this.state.pendingUpdate = null;
+                this.state.mode = 'create';
             }
 
-            // ===== STAGE MANAGEMENT =====
-            handleStageChange(stageUpper) {
-                const stageLower = (stageUpper || '').toLowerCase();
-                const stageHidden = document.getElementById('stage_hidden');
-                if (stageHidden) stageHidden.value = stageLower;
-                this.toggleStageSections(stageLower);
-
-                const btnGen = document.getElementById('generateQuotationBtn');
-                if (btnGen) btnGen.classList.toggle('d-none', stageLower !== 'quotation');
-            }
-
-            toggleStageSections(currentStage) {
-                const conditionalSections = document.querySelectorAll('.stage-conditional');
-                conditionalSections.forEach(section => {
-                    const stages = section.dataset.stages ? section.dataset.stages.split(',') : [];
-                    const shouldShow = stages.includes(currentStage);
-                    section.style.display = shouldShow ? 'block' : 'none';
-                });
-            }
-
-            // ===== ITEM MANAGEMENT =====
-            setupItemCalculations() {
-                const container = document.getElementById('itemsContainer');
-                if (!container) return;
-
-                container.addEventListener('input', (e) => {
-                    const target = e.target;
-                    const row = target.closest('.item-row');
-                    if (!row) return;
-
-                    // Handle quantity change
-                    if (target.classList.contains('item-qty')) {
-                        this.calculateItemTotal(row);
-                        this.updateDealSizeFromItems();
-                    }
-
-                    // Handle discount percentage change
-                    else if (target.classList.contains('item-disc')) {
-                        this.updateDiscountedPrice(row);
-                        this.calculateItemTotal(row);
-                        this.updateDealSizeFromItems();
-                    }
-
-                    // Handle discounted price manual change
-                    else if (target.classList.contains('item-discounted-price')) {
-                        this.updateDiscountPercentage(row);
-                        this.calculateItemTotal(row);
-                        this.updateDealSizeFromItems();
-                    }
-                });
-
-                this.updateDealSizeFromItems();
-            }
-
-            updateDiscountedPrice(row) {
-                if (!row) return;
-
-                const priceInput = row.querySelector('.item-price');
-                const discInput = row.querySelector('.item-disc');
-                const discountedPriceInput = row.querySelector('.item-discounted-price');
-
-                if (!priceInput || !discInput || !discountedPriceInput) return;
-
-                const price = parseFloat(priceInput.value) || 0;
-                const disc = parseFloat(discInput.value) || 0;
-
-                // Calculate discounted price
-                const discountedPrice = price * (1 - disc / 100);
-                discountedPriceInput.value = discountedPrice.toFixed(2);
-            }
-
-            updateDiscountPercentage(row) {
-                if (!row) return;
-
-                const priceInput = row.querySelector('.item-price');
-                const discInput = row.querySelector('.item-disc');
-                const discountedPriceInput = row.querySelector('.item-discounted-price');
-
-                if (!priceInput || !discInput || !discountedPriceInput) return;
-
-                const price = parseFloat(priceInput.value) || 0;
-                const discountedPrice = parseFloat(discountedPriceInput.value) || 0;
-
-                // Calculate discount percentage
-                if (price > 0) {
-                    const discountPercent = ((price - discountedPrice) / price) * 100;
-                    discInput.value = Math.max(0, Math.min(100, discountPercent)).toFixed(2);
-                }
-            }
-
-
-            calculateItemTotal(row) {
-                if (!row) return;
-
-                const qtyInput = row.querySelector('.item-qty');
-                const discountedPriceInput = row.querySelector('.item-discounted-price');
-                const totalInput = row.querySelector('.item-total');
-
-                if (!qtyInput || !discountedPriceInput || !totalInput) return;
-
-                const qty = parseFloat(qtyInput.value) || 0;
-                const discountedPrice = parseFloat(discountedPriceInput.value) || 0;
-                const total = qty * discountedPrice;
-
-                totalInput.value = total > 0 ? this.formatCurrency(total) : '';
-            }
-
-            updateDealSizeFromItems() {
-                const container = document.getElementById('itemsContainer');
-                const dealSizeInput = document.getElementById('dealSize');
-                if (!container || !dealSizeInput) return;
-
-                let sum = 0;
-                container.querySelectorAll('.item-row').forEach((row) => {
-                    const qty = parseFloat(row.querySelector('.item-qty')?.value || '0') || 0;
-                    const discountedPrice = parseFloat(row.querySelector('.item-discounted-price')?.value ||
-                        '0') || 0;
-                    sum += qty * discountedPrice;
-                });
-
-                dealSizeInput.value = sum;
-            }
-
-            formatCurrency(amount) {
-                return new Intl.NumberFormat('id-ID').format(amount);
-            }
-
-            addItemRow() {
-                const container = document.getElementById('itemsContainer');
-                if (!container) return;
-
-                const index = this.itemIndex++;
-                const itemRow = this.createItemRowHTML(index);
-                container.insertAdjacentHTML('beforeend', itemRow);
-
-                // init Select2 on the newly added row
-                this.initItemSelect(container.querySelector(`.item-row[data-item="${index}"]`));
-
-                this.updateDealSizeFromItems();
-            }
-
-            createItemRowHTML(index) {
-                return `
-      <div class="item-row card mb-3" data-item="${index}">
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label">Pilih Item</label>
-              <select class="form-select item-select" name="items[${index}][itemSelect]" data-index="${index}"></select>
-              <input type="hidden" name="items[${index}][itemCode]" class="legacy-item-code">
-              <input type="hidden" name="items[${index}][itemName]" class="legacy-item-name">
-            </div>
-            
-            <div class="col-md-1">
-              <label class="form-label">UoM</label>
-              <input type="text" class="form-control item-uom" name="items[${index}][uom]" readonly tabindex="-1">
-            </div>
-            
-            <div class="col-md-2">
-              <label class="form-label">Harga</label>
-              <input type="number" class="form-control item-price bg-light" name="items[${index}][price]" readonly tabindex="-1">
-            </div>
-            
-            <div class="col-md-1">
-              <label class="form-label">Qty</label>
-              <input type="number" class="form-control item-qty" name="items[${index}][qty]" min="1">
-            </div>
-            
-            <div class="col-md-1">
-              <label class="form-label">Disc %</label>
-              <input type="number" class="form-control item-disc" name="items[${index}][disc]" min="0" max="100" step="0.01">
-            </div>
-            
-            <div class="col-md-2">
-              <label class="form-label">Harga (after disc)</label>
-              <input type="number" class="form-control item-discounted-price" name="items[${index}][discountedPrice]" min="0" step="0.01">
-            </div>
-            
-            <div class="col-md-2">
-              <label class="form-label">Total</label>
-              <input type="text" class="form-control item-total bg-light" name="items[${index}][totalPrice]" readonly tabindex="-1">
-            </div>
-          </div>
-          
-          <button type="button" class="btn btn-outline-danger btn-sm mt-2 remove-item-btn" data-remove="${index}">
-            <i class="fas fa-trash me-1" aria-hidden="true"></i> Hapus Item
-          </button>
-        </div>
-      </div>
-    `;
-            }
-
-            handleItemRemoval(e) {
-                const removeBtn = e.target.closest('[data-remove]');
-                if (!removeBtn) return;
-
-                const itemIndex = removeBtn.dataset.remove;
-                const itemRow = document.querySelector(`.item-row[data-item="${itemIndex}"]`);
-                if (itemRow) itemRow.remove();
-                this.updateDealSizeFromItems();
-            }
-
-            // ===== DEAL ID & DATES =====
-            generateDealId() {
-                const id = this.createRandomId();
-                const dealIdInput = document.getElementById('dealId');
-                const dealsIdHidden = document.getElementById('deals_id');
-                if (dealIdInput) dealIdInput.value = id;
-                if (dealsIdHidden) dealsIdHidden.value = id;
-            }
-            createRandomId() {
-                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-                let result = '';
-                for (let i = 0; i < 9; i++) result += chars[Math.floor(Math.random() * chars.length)];
-                return result;
-            }
-            setTodayDate() {
-                const dateInput = document.getElementById('createdDate');
-                if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-            }
-            setDefaultEmail() {
-                const emailInput = document.getElementById('email');
-                if (emailInput && !emailInput.value) {
-                    // Get user email from blade template
-                    const userEmail = '{{ auth()->user()->email ?? '' }}';
-                    if (userEmail) {
-                        emailInput.value = userEmail;
-                    }
-                }
-            }
-
-            // ===== STORE SELECT2 =====
-            initStoreSelect() {
-                if (!window.jQuery) {
-                    console.warn('jQuery not found; Select2 not initialized');
-                    return;
-                }
-                const $ = window.jQuery;
-                const $select = $('#storeSelect');
-                if (!$select.length) return;
-
-                const ajaxUrl = '{{ route('stores.search') }}';
-
-                $(document).ajaxError(function(event, jqxhr, settings, thrownError) {
-                    if (settings && settings.url && settings.url.indexOf('/stores/search') !== -1) {
-                        console.error('Select2 /stores/search error:', jqxhr.status, jqxhr.responseText ||
-                            thrownError);
-                    }
-                });
-
-                const $modal = $('#dealModal');
-                $select.select2({
-                    theme: 'bootstrap-5',
-                    placeholder: 'Cari & pilih store…',
-                    allowClear: true,
-                    dropdownParent: $modal.length ? $modal : undefined,
-                    ajax: {
-                        url: ajaxUrl,
-                        type: 'GET',
-                        dataType: 'json',
-                        delay: 250,
-                        data: params => ({
-                            q: params.term || ''
-                        }),
-                        processResults: data => {
-                            if (!data || !Array.isArray(data.results)) return {
-                                results: []
-                            };
-                            return data;
-                        },
-                        cache: true
-                    },
-                    minimumInputLength: 0,
-                    width: '100%',
-                    // Fix: Allow manual option creation for existing data
-                    escapeMarkup: function(markup) {
-                        return markup;
-                    }
-                });
-
-                $select.on('select2:open', () => {
-                    const $search = $('.select2-container--open .select2-search__field');
-                    if ($search.val() === '') $search.trigger('input');
-                });
-
-                $select.on('select2:select', (e) => {
-                    const data = e.params.data || {};
-                    document.getElementById('store_id').value = data.id || '';
-                    document.getElementById('store_name').value = data.text || '';
-
-                    // Reset dan reload salpers berdasarkan store yang dipilih
-                    this.reloadSalesSelect();
-                });
-
-                $select.on('select2:clear', () => {
-                    document.getElementById('store_id').value = '';
-                    document.getElementById('store_name').value = '';
-
-                    // Reset salpers ketika store di-clear
-                    this.reloadSalesSelect();
-                });
-
-                console.log('Select2 initialized for #storeSelect at', ajaxUrl);
-            }
-            // ===== CUSTOMER SELECT2 =====
-            initCustomerSelect() {
-                if (!window.jQuery) {
-                    console.warn('jQuery not found; Customer Select2 not initialized');
-                    return;
-                }
-                const $ = window.jQuery;
-                const $select = $('#customerSelect');
-                if (!$select.length) return;
-
-                const ajaxUrl = '{{ route('customers.search') }}';
-
-                $select.select2({
-                    theme: 'bootstrap-5',
-                    placeholder: 'Cari & pilih Customer…',
-                    allowClear: true,
-                    dropdownParent: $('#dealModal'),
-                    ajax: {
-                        url: ajaxUrl,
-                        type: 'GET',
-                        dataType: 'json',
-                        delay: 250,
-                        data: params => ({
-                            q: params.term || ''
-                        }),
-                        processResults: data => data,
-                        cache: true,
-                    },
-                    minimumInputLength: 0,
-                    width: '100%'
-                });
-
-                $select.on('select2:select', (e) => {
-                    const d = e.params.data || {};
-                    $('#id_cust').val(d.id || '');
-                    $('#cust_name').val(d.name || '');
-                    $('#customerPhone').val(d.phone || '');
-                    $('#customerAddress').val(d.address || '');
-                });
-
-                $select.on('select2:clear', () => {
-                    $('#id_cust').val('');
-                    $('#cust_name').val('');
-                    $('#customerPhone').val('');
-                    $('#customerAddress').val('');
-                });
-
-                console.log('Select2 initialized for Customer at', ajaxUrl);
-            }
-
-            // ===== SALPER SELECT2 =====
-            initSalesSelect() {
-                if (!window.jQuery) {
-                    console.warn('jQuery not found; Sales Select2 not initialized');
-                    return;
-                }
-                const $ = window.jQuery;
-                const $select = $('#salesSelect');
-                if (!$select.length) return;
-
-                const ajaxUrl = '{{ route('salpers.search') }}';
-
-                $select.select2({
-                    theme: 'bootstrap-5',
-                    placeholder: 'Cari & pilih Sales…',
-                    allowClear: true,
-                    dropdownParent: $('#dealModal'),
-                    ajax: {
-                        url: ajaxUrl,
-                        type: 'GET',
-                        dataType: 'json',
-                        delay: 250,
-                        data: params => {
-                            const storeId = document.getElementById('store_id').value;
-                            return {
-                                q: params.term || '',
-                                store_id: storeId || ''
-                            };
-                        },
-                        processResults: data => data,
-                        cache: true,
-                    },
-                    minimumInputLength: 0,
-                    width: '100%',
-                    multiple: true,
-                });
-
-                $select.on('change', () => {
-                    const selected = $select.select2('data') || [];
-                    const first = selected[0] || {};
-                    $('#sales_id_visit').val(first.id || '');
-                    $('#sales_name').val(first.text || '');
-                });
-
-                $select.on('select2:open', () => {
-                    const $search = $('.select2-container--open .select2-search__field');
-                    if ($search.val() === '') $search.trigger('input');
-                });
-
-                console.log('Select2 initialized (multi) for Sales at', ajaxUrl);
-            }
-
-            // ===== RELOAD SALES SELECT =====
-            reloadSalesSelect() {
-                if (!window.jQuery) return;
-                const $ = window.jQuery;
-                const $select = $('#salesSelect');
-                if (!$select.length) return;
-
-                // Clear current selection
-                $select.val(null).trigger('change');
-
-                // Clear cache and reload options
-                $select.select2('destroy');
-                this.initSalesSelect();
-            }
-
-            // ===== ITEM SELECT2 HELPERS =====
-            computeDiscountedPrice(price, disc) {
-                const p = parseFloat(price || 0);
-                const d = Math.min(Math.max(parseFloat(disc || 0), 0), 100);
-                return +(p * (1 - d / 100)).toFixed(2);
-            }
-
-            initItemSelect(rowEl) {
-                if (!window.jQuery) {
-                    console.warn('jQuery not found; item Select2 not initialized');
-                    return;
-                }
-                const $ = window.jQuery;
-                const $select = $(rowEl).find('select.item-select');
-                if (!$select.length) return;
-
-                const ajaxUrl = '{{ route('items.search') }}';
-
-                $select.select2({
-                    theme: 'bootstrap-5',
-                    placeholder: 'Cari & pilih item…',
-                    allowClear: true,
-                    dropdownParent: $('#dealModal'),
-                    ajax: {
-                        url: ajaxUrl,
-                        type: 'GET',
-                        dataType: 'json',
-                        delay: 250,
-                        data: params => ({
-                            q: params.term || ''
-                        }),
-                        processResults: data => Array.isArray(data?.results) ? data : {
-                            results: []
-                        },
-                        cache: true,
-                    },
-                    minimumInputLength: 0,
-                    width: '100%'
-                });
-
-                $select.on('select2:select', (e) => {
-                    const d = e.params.data || {};
-                    const $row = $(rowEl);
-
-                    // Set hidden fields
-                    $row.find('input.legacy-item-code').val(d.id || '');
-                    $row.find('input.legacy-item-name').val(d.item_name || '');
-                    $row.find('input.item-uom').val(d.uom || '');
-
-                    // Set price field (readonly)
-                    $row.find('input.item-price').val(d.price || 0);
-
-                    // Set initial discount from item master
-                    $row.find('input.item-disc').val(d.disc ?? 0);
-
-                    // Calculate initial discounted price
-                    const price = parseFloat(d.price) || 0;
-                    const disc = parseFloat(d.disc) || 0;
-                    const discountedPrice = price * (1 - disc / 100);
-                    $row.find('input.item-discounted-price').val(discountedPrice.toFixed(2));
-
-                    this.calculateItemTotal(rowEl);
-                    this.updateDealSizeFromItems();
-                });
-
-                $select.on('select2:clear', () => {
-                    const $row = $(rowEl);
-                    $row.find('input.legacy-item-code').val('');
-                    $row.find('input.legacy-item-name').val('');
-                    $row.find('input.item-uom').val('');
-                    $row.find('input.item-price').val('');
-                    $row.find('input.item-disc').val('');
-                    $row.find('input.item-discounted-price').val('');
-                    $row.find('input.item-total').val('');
-                    this.updateDealSizeFromItems();
-                });
-            }
-
-            initAllItemSelects() {
-                document.querySelectorAll('.item-row').forEach(row => this.initItemSelect(row));
-            }
-
-            // ===== KANBAN HELPERS =====
+            // ==================== KANBAN OPERATIONS ====================
             addCardToKanban(deal, redirectUrl) {
                 const stage = deal.stage || 'mapping';
                 const column = document.querySelector(`[data-stage="${stage}"]`);
-                if (!column) return;
-
-                const kanbanBody = column.querySelector('.kanban-body');
-                const card = this.createKanbanCard(deal, redirectUrl);
+                const kanbanBody = column?.querySelector('.kanban-body');
 
                 if (kanbanBody) {
+                    const card = this.createKanbanCard(deal, redirectUrl);
                     kanbanBody.insertAdjacentHTML('afterbegin', card);
                     this.updateStageCount(column, 1);
                 }
-
-                this.addCardToList(deal, redirectUrl);
             }
 
             createKanbanCard(deal, redirectUrl) {
@@ -2594,184 +2363,202 @@
                      data-id="${deal.deals_id}"
                      data-stage="${deal.stage}">
                 <div class="card-body p-2">
-                    <h3 class="fw-semibold h6 mb-1">${deal.deal_name}</h3>
-                    <div class="small text-muted mb-1">${dealSize}</div>
-                    <div class="small text-muted">
-                        <i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>
-                        ${createdDate}
+                    <div class="deal-content" style="cursor: pointer;" 
+                         data-url="${redirectUrl}">
+                        <h3 class="fw-semibold h6 mb-1">${deal.deal_name}</h3>
+                        <div class="small text-muted mb-1">${dealSize}</div>
+                        <div class="small text-muted">
+                            Created: ${createdDate}
+                        </div>
                     </div>
-                    <a href="${redirectUrl}" class="stretched-link" aria-label="View deal ${deal.deal_name}"></a>
+                    <div class="d-flex align-items-center gap-1 mt-2">
+                        <button class="btn btn-sm btn-outline-primary edit-deal-btn" 
+                                data-id="${deal.deals_id}" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-info duplicate-deal-btn" 
+                                data-id="${deal.deals_id}" title="Duplicate">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
                 </div>
             </article>
         `;
             }
 
+            addCardToList(deal, redirectUrl) {
+                const tbody = document.getElementById('listTableBody');
+                if (!tbody) return;
+
+                const config = this.config.stageConfig[deal.stage] || this.config.stageConfig['mapping'];
+                const dealSize = deal.deal_size ? `Rp ${this.formatCurrency(deal.deal_size)}` : 'Rp 0';
+                const createdDate = deal.created_at ? new Date(deal.created_at).toLocaleDateString('id-ID') : '-';
+
+                const row = `
+            <tr data-id="${deal.deals_id}" data-stage="${deal.stage}">
+                <td><a href="${redirectUrl}" class="text-decoration-none">${deal.deal_name}</a></td>
+                <td><span class="badge ${config.color} text-white">${config.label}</span></td>
+                <td>${dealSize}</td>
+                <td>${deal.store_name || '-'}</td>
+                <td>${createdDate}</td>
+                <td>
+                    <a href="${redirectUrl}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </td>
+            </tr>
+        `;
+
+                tbody.insertAdjacentHTML('afterbegin', row);
+            }
+
             updateStageCount(column, delta) {
-                const countElement = column ? column.querySelector('.kanban-sub .count') : null;
-                if (!countElement) return;
-                const currentCount = parseInt(countElement.textContent) || 0;
-                const newCount = Math.max(0, currentCount + delta);
-                countElement.textContent = newCount;
+                const countElement = column?.querySelector('.kanban-sub .count');
+                if (countElement) {
+                    const current = parseInt(countElement.textContent) || 0;
+                    countElement.textContent = Math.max(0, current + delta);
+                }
+            }
+
+            updateStageTotal(column) {
+                if (!column) return;
+
+                let total = 0;
+                column.querySelectorAll('.kanban-card').forEach(card => {
+                    const dealSizeText = card.querySelector('.small.text-muted')?.textContent || '';
+                    const match = dealSizeText.match(/Rp\s*([\d.,]+)/);
+                    if (match) {
+                        total += parseFloat(match[1].replace(/\./g, '').replace(',', '.')) || 0;
+                    }
+                });
+
+                const totalElement = column.querySelector('.kanban-sub small');
+                if (totalElement) {
+                    totalElement.textContent = `Rp ${this.formatCurrency(total)}`;
+                }
             }
 
             updateTotalCount(delta) {
-                const totalElement = document.getElementById('totalDealsCount');
+                const totalElement = this.elements.totalDealsCount;
                 if (!totalElement) return;
+
                 const text = totalElement.textContent;
-                const currentTotal = parseInt((text.match(/\d+/) || [0])[0]) || 0;
-                const newTotal = Math.max(0, currentTotal + delta);
-                totalElement.textContent = `${newTotal} Total Deals`;
+                const current = parseInt((text.match(/\d+/) || [0])[0]) || 0;
+                totalElement.textContent = `${Math.max(0, current + delta)} Total Deals`;
             }
 
-            handleSearch(query) {
-                const cards = document.querySelectorAll('.kanban-card');
-                const searchTerm = (query || '').toLowerCase().trim();
-                cards.forEach(card => {
-                    const dealNameEl = card.querySelector('.fw-semibold');
-                    const dealName = dealNameEl ? dealNameEl.textContent.toLowerCase() : '';
-                    card.style.display = (!searchTerm || dealName.includes(searchTerm)) ? 'block' : 'none';
-                });
+            // ==================== UTILITY FUNCTIONS ====================
+            generateDealId() {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let id = '';
+                for (let i = 0; i < 9; i++) {
+                    id += chars[Math.floor(Math.random() * chars.length)];
+                }
+
+                if (this.elements.dealId) this.elements.dealId.value = id;
+                if (this.elements.dealsIdHidden) this.elements.dealsIdHidden.value = id;
             }
 
-            // ===== FORM UTIL =====
-            resetForm() {
-                const form = document.getElementById('dealForm');
-                if (!form) return;
+            setTodayDate() {
+                if (this.elements.createdDate) {
+                    this.elements.createdDate.value = new Date().toISOString().split('T')[0];
+                }
+            }
 
-                form.reset();
-                form.classList.remove('was-validated');
+            setDefaultEmail() {
+                const emailInput = document.getElementById('email');
+                if (emailInput && !emailInput.value) {
+                    const userEmail = '{{ auth()->user()->email ?? '' }}';
+                    if (userEmail) emailInput.value = userEmail;
+                }
+            }
 
-                // keep only the first default row, remove others
-                const container = document.getElementById('itemsContainer');
-                if (container) {
-                    const allItems = container.querySelectorAll('.item-row');
-                    allItems.forEach((item, index) => {
-                        if (index > 0) item.remove();
+            formatCurrency(amount) {
+                return new Intl.NumberFormat('id-ID').format(amount);
+            }
+
+            toggleFilters() {
+                const filterSection = this.elements.filterSection;
+                const buttonText = document.getElementById('filterButtonText');
+
+                if (filterSection?.classList.contains('show')) {
+                    filterSection.classList.remove('show');
+                    if (buttonText) buttonText.textContent = 'Show Filters';
+                } else {
+                    filterSection?.classList.add('show');
+                    if (buttonText) buttonText.textContent = 'Hide Filters';
+                }
+            }
+
+            async generateQuotation() {
+                const dealsId = this.elements.dealsIdHidden?.value || this.elements.dealId?.value;
+                if (!dealsId) {
+                    alert('Deals ID tidak ditemukan');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/deals/${encodeURIComponent(dealsId)}/quotation/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': this.state.csrfToken
+                        }
                     });
 
-                    // clear default row fields + Select2
-                    const defaultRow = container.querySelector('.item-row[data-item="0"]');
-                    if (defaultRow) {
-                        const $ = window.jQuery;
-                        if ($) {
-                            const $sel = $(defaultRow).find('select.item-select');
-                            if ($sel.length) $sel.val(null).trigger('change');
-                        }
-                        defaultRow.querySelectorAll('input').forEach(inp => inp.value = '');
-                    }
-                }
+                    const data = await response.json();
+                    if (!data.ok) throw new Error(data.message || 'Failed to generate quotation');
 
-                // reset Select2 store
-                const $select = window.jQuery ? jQuery('#storeSelect') : null;
-                if ($select && $select.length) {
-                    $select.val(null).trigger('change');
-                }
-                const sid = document.getElementById('store_id');
-                const sname = document.getElementById('store_name');
-                if (sid) sid.value = '';
-                if (sname) sname.value = '';
-
-                // reset index for newly added rows
-                this.itemIndex = 1;
-            }
-
-            showLoading(show) {
-                const spinner = document.getElementById('loadingSpinner');
-                if (spinner) spinner.classList.toggle('d-none', !show);
-            }
-            showSuccess(message) {
-                this.showNotification(message, 'success');
-            }
-            showError(message) {
-                this.showNotification(message, 'error');
-            }
-            showNotification(message, type = 'info') {
-                if (type === 'error') {
-                    console.error(message);
-                    alert(`Error: ${message}`);
-                } else {
-                    console.log(message);
-                    alert(message);
-                    window.location.reload();
+                    window.open(data.url, '_blank');
+                } catch (error) {
+                    console.error(error);
+                    alert('Gagal generate quotation: ' + error.message);
                 }
             }
 
+            requestApproval(level) {
+                const hidden = document.getElementById('status_approval_harga');
+                if (hidden?.value === 'REQUEST_HARGA_KHUSUS') {
+                    alert('Anda sudah mengajukan request harga khusus');
+                    return;
+                }
 
+                this.updateApprovalStatus('REQUEST_HARGA_KHUSUS', 'Menunggu Approval', 'bg-info');
+            }
 
-            // ===== HELPER FUNCTION =====
-            setHargaApprovalLocal(value, label, badgeClass) {
+            updateApprovalStatus(value, label, badgeClass) {
                 const hidden = document.getElementById('status_approval_harga');
                 const badge = document.getElementById('statusApprovalHargaBadge');
 
-                if (hidden) {
-                    hidden.value = value || '';
-                }
+                if (hidden) hidden.value = value || '';
                 if (badge) {
                     badge.className = `badge ${badgeClass || 'bg-secondary'}`;
                     badge.textContent = label || 'Belum ada permintaan';
                 }
             }
+
+            // ==================== NOTIFICATIONS ====================
+            showLoading(show) {
+                this.elements.loadingSpinner?.classList.toggle('d-none', !show);
+            }
+
+            showSuccess(message) {
+                console.log(message);
+                alert(message);
+                window.location.reload();
+            }
+
+            showError(message) {
+                console.error(message);
+                alert(`Error: ${message}`);
+            }
         }
 
-        // ===== INITIALIZE APPLICATION =====
-        document.addEventListener('DOMContentLoaded', function() {
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', () => {
             new DealsKanban();
-        });
 
-        // ===== ADDITIONAL UTILITY BUTTONS =====
-        document.getElementById('downloadBtn')?.addEventListener('click', function() {
-            console.log('Export functionality not implemented yet');
-        });
-        document.getElementById('deleteBtn')?.addEventListener('click', function() {
-            console.log('Delete functionality not implemented yet');
-        });
-        document.getElementById('listViewBtn')?.addEventListener('click', function() {
-            document.getElementById('kanbanViewBtn')?.classList.remove('active');
-            this.classList.add('active');
-        });
-        document.getElementById('kanbanViewBtn')?.addEventListener('click', function() {
-            document.getElementById('listViewBtn')?.classList.remove('active');
-            this.classList.add('active');
-        });
-        document.getElementById('generateQuotationBtn')?.addEventListener('click', async () => {
-            const dealsId = document.getElementById('deals_id')?.value || document.getElementById('dealId')
-                ?.value;
-            if (!dealsId) return alert('Deals ID tidak ditemukan.');
-
-            const url = `/deals/${encodeURIComponent(dealsId)}/quotation/generate`;
-
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
-                            'content') || ''
-                    }
-                });
-                const data = await res.json();
-                if (!data.ok) throw new Error(data.message || 'Gagal generate quotation');
-
-                window.open(data.url, '_blank');
-
-            } catch (err) {
-                console.error(err);
-                alert('Gagal generate quotation: ' + err.message);
-            }
-        });
-        document.getElementById('toggleFilterBtn')?.addEventListener('click', function() {
-            const filterSection = document.getElementById('filterSection');
-            const buttonText = document.getElementById('filterButtonText');
-
-            if (filterSection.classList.contains('show')) {
-                filterSection.classList.remove('show');
-                buttonText.textContent = 'Show Filters';
-            } else {
-                filterSection.classList.add('show');
-                buttonText.textContent = 'Hide Filters';
-            }
-        });
-        document.addEventListener('DOMContentLoaded', function() {
+            // Check for active filters
             const urlParams = new URLSearchParams(window.location.search);
             const hasActiveFilters = Array.from(urlParams.entries()).some(([key, value]) =>
                 value && key !== 'page' && key !== 'per_page'

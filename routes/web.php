@@ -74,6 +74,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/deal-reports', [DealReportController::class, 'index'])->name('deal-reports.index');
     Route::get('/deal-reports/{dealsId}', [DealReportController::class, 'show'])->name('deal-reports.show');
 
+    Route::get('/users/reset-password', [UserController::class, 'resetPasswordForm'])->name('users.reset-password-form');
+    Route::put('/users/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+
     Route::resource('customers', DataCustomerController::class);
     Route::resource('salpers', SalperController::class);
     Route::resource('deals', DealController::class);

@@ -11,7 +11,6 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    // optional: batasi akses
     public function __construct()
     {
         $this->middleware('auth');
@@ -174,5 +173,38 @@ class UserController extends Controller
         });
 
         return response()->json(['results' => $items]);
+    }
+
+    /**
+     * Show reset password form for current user
+     */
+    public function resetPasswordForm()
+    {
+        return view('users.reset-password');
+    }
+
+    /**
+     * Reset current user's password
+     */
+    public function resetPassword(Request $request)
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:6', 'confirmed', 'different:current_password'],
+        ]);
+
+        $user = Auth::user();
+
+        // Verify current password
+        if (!Hash::check($data['current_password'], $user->password)) {
+            return back()->with('error', 'Current password is incorrect.');
+        }
+
+        // Update password
+        $user->password = Hash::make($data['password']);
+        $user->save();
+
+        return redirect()->route('dashboard')
+            ->with('success', 'Your password has been successfully updated.');
     }
 }
